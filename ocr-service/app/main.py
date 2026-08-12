@@ -9,6 +9,7 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 
 load_dotenv()  # load .env before any config reads
 
@@ -55,6 +56,11 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # --- Root redirect to /docs -------------------------------------------
+    @app.get("/", include_in_schema=False)
+    async def root_redirect():
+        return RedirectResponse(url="/docs")
 
     # --- Routes -----------------------------------------------------------
     app.include_router(router)
