@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: ocr-service
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: standard  # needs enough RAM for PaddleOCR (~1 GB)
+    region: singapore  # closest to Thailand
+    envVars:
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: MAX_IMAGE_SIZE_MB
+        value: "10"
+      - key: LOG_LEVEL
+        value: "INFO"
+    healthCheckPath: /health
+    autoDeploy: true
