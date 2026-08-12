@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 
@@ -37,7 +38,7 @@ def create_app() -> FastAPI:
         title="Thai Bank Slip OCR Service",
         description=(
             "Microservice that accepts Thai bank transfer slip images, "
-            "runs PaddleOCR, and returns structured JSON data."
+            "runs EasyOCR, and returns structured JSON data."
         ),
         version="1.0.0",
         docs_url="/docs",
@@ -61,6 +62,16 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     async def _startup() -> None:
         logger.info("OCR service started. CORS origins: %s", origins)
+        # Background pre-warm model without blocking server boot
+        def _warmup():
+            try:
+                from app.services.ocr import _get_reader
+                _get_reader()
+                logger.info("EasyOCR model pre-warmed successfully.")
+            except Exception as e:
+                logger.warning("EasyOCR model background pre-warm postponed to first request: %s", e)
+
+        asyncio.get_event_loop().run_in_executor(None, _warmup)
 
     return app
 

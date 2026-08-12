@@ -16,9 +16,6 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-download EasyOCR models at build time to avoid cold-start delay
-RUN python -c "import easyocr; easyocr.Reader(['th','en'], gpu=False)"
-
 COPY app/ ./app/
 
 RUN mkdir -p /app/uploads
