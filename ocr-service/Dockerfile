@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM python:3.11-slim
 
-# System deps for PaddleOCR (libGL + libgomp)
+# EasyOCR needs libGL and libglib
 RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
         libglib2.0-0 \
@@ -9,19 +9,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libxrender1 \
         libxext6 \
         libgl1 \
-        libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Install Python deps first (cache layer)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application source
+# Pre-download EasyOCR models at build time to avoid cold-start delay
+RUN python -c "import easyocr; easyocr.Reader(['th','en'], gpu=False)"
+
 COPY app/ ./app/
 
-# Create uploads directory
 RUN mkdir -p /app/uploads
 
 EXPOSE 10000

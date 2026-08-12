@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: chuaytee-ocr
+    runtime: docker
+    dockerfilePath: ocr-service/Dockerfile
+    dockerContext: ocr-service
+    plan: free
+    region: singapore
+    envVars:
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: MAX_IMAGE_SIZE_MB
+        value: "10"
+      - key: LOG_LEVEL
+        value: "INFO"
+      - key: PORT
+        value: "10000"
+    healthCheckPath: /health
+    autoDeploy: true

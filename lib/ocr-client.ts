@@ -13,9 +13,22 @@ export interface OCRResult {
 }
 
 export async function scanSlip(file: File): Promise<OCRResult> {
-  const form = new FormData()
-  form.append('file', file)
-  const res = await fetch(`${OCR_URL}/ocr/process`, { method: 'POST', body: form })
-  if (!res.ok) throw new Error(`OCR failed: ${res.statusText}`)
-  return res.json()
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 2000) // 2 second timeout for connection check
+
+  try {
+    const form = new FormData()
+    form.append('file', file)
+    const res = await fetch(`${OCR_URL}/ocr/process`, { 
+      method: 'POST', 
+      body: form,
+      signal: controller.signal
+    })
+    clearTimeout(timeoutId)
+    if (!res.ok) throw new Error(`OCR failed: ${res.statusText}`)
+    return await res.json()
+  } catch (err) {
+    clearTimeout(timeoutId)
+    throw err
+  }
 }
