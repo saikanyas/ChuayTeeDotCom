@@ -42,7 +42,6 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        // ใช้ origin ปัจจุบัน — ทำงานทั้ง localhost และ Vercel โดยอัตโนมัติ
         redirectTo: `${window.location.origin}/auth/callback`,
       },
     })
@@ -50,7 +49,6 @@ export default function LoginPage() {
       setError(error.message)
       setGoogleLoading(false)
     }
-    // หาก success จะ redirect ออกจากหน้านี้ไปยัง Google — ไม่ต้อง setLoading(false)
   }
 
   return (
