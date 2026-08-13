@@ -40,17 +40,32 @@ export default function SettingsPage() {
 
   const isTargetZero = dailyTarget === 0 || !targetInput || targetInput === '0'
 
+  const avatarUrl = user?.user_metadata?.avatar_url || 
+                    user?.user_metadata?.picture || 
+                    user?.identities?.[0]?.identity_data?.avatar_url || 
+                    user?.identities?.[0]?.identity_data?.picture
+
+  const displayName = user?.user_metadata?.full_name || 
+                      user?.user_metadata?.name || 
+                      user?.user_metadata?.display_name || 
+                      user?.email?.split('@')[0] || 
+                      'ผู้ใช้'
+
   return (
     <div className="min-h-screen p-4 bg-[#F9F8FA] pb-28 font-body">
       <h1 className="text-xl font-display font-bold mb-6 mt-2 text-gray-800">ตั้งค่าและเมนู</h1>
       
       {/* User profile card */}
       <div className="bg-white rounded-2xl p-4 flex items-center mb-6 border border-gray-100 shadow-2xs font-body">
-        <div className="w-14 h-14 rounded-full bg-[var(--color-primary)] text-white text-xl font-bold flex items-center justify-center mr-4 shadow-xs shrink-0">
-          {user?.user_metadata?.display_name?.charAt(0) || 'U'}
+        <div className="w-14 h-14 rounded-full bg-[var(--color-primary)] text-white text-xl font-bold flex items-center justify-center mr-4 shadow-xs shrink-0 overflow-hidden border border-pink-100">
+          {avatarUrl ? (
+            <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+          ) : (
+            displayName.charAt(0).toUpperCase()
+          )}
         </div>
         <div>
-          <h2 className="font-bold text-base text-gray-800 font-body">{user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'ผู้ใช้'}</h2>
+          <h2 className="font-bold text-base text-gray-800 font-body">{displayName}</h2>
           <p className="text-xs text-gray-500 font-body">{user?.email || 'บัญชีเริ่มต้น'}</p>
         </div>
       </div>

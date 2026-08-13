@@ -187,8 +187,8 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[#F9F8FA] pb-24 font-body">
       {/* Centered Top Header */}
       <TopHeader 
-        userName={user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Yotsakon Saikanya'}
-        avatarUrl={user?.user_metadata?.avatar_url}
+        userName={user?.user_metadata?.full_name || user?.user_metadata?.name || user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Yotsakon Saikanya'}
+        avatarUrl={user?.user_metadata?.avatar_url || user?.user_metadata?.picture || user?.identities?.[0]?.identity_data?.avatar_url || user?.identities?.[0]?.identity_data?.picture}
         activeTab={activeHeaderTab}
         onTabChange={setActiveHeaderTab}
       />
