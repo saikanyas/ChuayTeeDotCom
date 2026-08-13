@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   const next = searchParams.get('next') ?? '/'
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 
   if (!supabaseUrl || !supabaseKey) {
     console.error('Supabase env vars missing in callback route')
@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
   if (code) {
     try {
       const cookieStore = await cookies()
+      let redirectResponse = NextResponse.redirect(`${origin}${next}`)
+
       const supabase = createServerClient(
         supabaseUrl,
         supabaseKey,
@@ -28,6 +30,10 @@ export async function GET(request: NextRequest) {
               cookiesToSet.forEach(({ name, value, options }) =>
                 cookieStore.set(name, value, options)
               )
+              redirectResponse = NextResponse.redirect(`${origin}${next}`)
+              cookiesToSet.forEach(({ name, value, options }) =>
+                redirectResponse.cookies.set(name, value, options)
+              )
             },
           },
         }
@@ -35,7 +41,7 @@ export async function GET(request: NextRequest) {
 
       const { error } = await supabase.auth.exchangeCodeForSession(code)
       if (!error) {
-        return NextResponse.redirect(`${origin}${next}`)
+        return redirectResponse
       } else {
         console.error('OAuth exchangeCodeForSession error:', error)
       }
