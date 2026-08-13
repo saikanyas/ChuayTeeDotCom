@@ -54,9 +54,11 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ backgroundColor: 'var(--color-bg)', backgroundImage: 'linear-gradient(to bottom, var(--color-surface-tint), transparent)' }}>
       <div className="w-full max-w-sm flex flex-col items-center">
-        <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6" style={{ backgroundColor: 'var(--color-primary)' }}>
-          <span className="text-white text-3xl font-display font-bold">ช</span>
-        </div>
+        <img 
+          src="/logo.png" 
+          alt="ช่วยที.com Logo" 
+          className="w-24 h-24 rounded-3xl object-cover shadow-md mb-4 hover:scale-105 transition-transform" 
+        />
         <h1 className="text-3xl font-display font-bold mb-2 text-center" style={{ color: 'var(--color-text-primary)' }}>ช่วยที.com</h1>
         <p className="text-center mb-8" style={{ color: 'var(--color-text-second)' }}>เพื่อนช่วยรอดสิ้นเดือน สำหรับนักศึกษา</p>
 

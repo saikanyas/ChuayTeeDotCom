@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/store/finance'
 import { LogOut, Bell, ChevronRight, Target } from 'lucide-react'
+import PWAInstallBanner from '@/components/pwa-install-banner'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -88,6 +89,11 @@ export default function SettingsPage() {
           <span className="text-gray-500 ml-12 text-xs">เวลาแจ้งเตือนประจำวัน</span>
           <span className="font-bold text-xs text-gray-700">20:00 <ChevronRight size={14} className="inline ml-1" /></span>
         </div>
+      </div>
+
+      {/* PWA Install Banner */}
+      <div className="mb-6">
+        <PWAInstallBanner />
       </div>
 
       <button onClick={signOut} className="w-full bg-white border border-red-200 text-red-500 rounded-2xl p-4 font-bold flex justify-center items-center text-sm shadow-2xs active:scale-98 transition-transform">
