@@ -8,7 +8,7 @@ import {
   ChevronDown, Check, CheckCircle2, Utensils, Coffee, Wine, Bus, Car, 
   ShoppingBag, Fuel, Tv, Home, Smartphone, PiggyBank, Film, HeartPulse, 
   GraduationCap, Briefcase, BadgeDollarSign, Clock, Store, Gift, TrendingUp, 
-  Landmark, Building, HeartHandshake, Loader2, Calendar, Pencil
+  Landmark, Building, HeartHandshake, Loader2, Calendar, Pencil, Sparkles
 } from 'lucide-react'
 import { useFinanceStore } from '@/store/finance'
 import { createClient } from '@/lib/supabase/client'
@@ -318,6 +318,38 @@ export default function AddPage() {
 
   return (
     <div className="min-h-screen bg-[#FFF5F8] pb-24 font-body text-gray-800">
+      {/* Full-Screen Scanning Notification Overlay */}
+      {isScanning && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-6 font-body">
+          <div className="bg-white rounded-3xl p-6 max-w-xs w-full shadow-2xl border border-pink-100 text-center space-y-4 font-body">
+            <div className="relative w-16 h-16 mx-auto flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full border-4 border-pink-300 animate-ping opacity-40" />
+              <div className="w-16 h-16 rounded-2xl bg-pink-50 text-[var(--color-primary)] flex items-center justify-center shadow-xs border border-pink-100">
+                <Loader2 size={32} className="animate-spin text-[var(--color-primary)]" />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <h3 className="font-bold text-base text-gray-800 font-display">กำลังสแกนสลิป... 🧾</h3>
+              <p className="text-xs text-gray-500 font-body">ระบบ AI กำลังอ่านยอดเงินและข้อมูลสลิป</p>
+            </div>
+
+            <div className="bg-pink-50/90 border border-pink-200/80 rounded-2xl p-3 text-[11px] text-pink-800 leading-relaxed text-left font-body shadow-2xs">
+              <p className="font-bold mb-1 flex items-center gap-1 text-pink-900 font-body">
+                <Sparkles size={14} className="text-amber-500 shrink-0" /> ข้อความแจ้งเตือนระบบ:
+              </p>
+              <span>
+                <b>กำลังสแกนอยู่นะครับ!</b> หากเป็นการใช้งานสแกนครั้งแรกของวัน เซิร์ฟเวอร์ Render อาจกำลังตื่นจาก Cold Run (10–30 วินาที) ไม่ต้องกดซ้ำครับ ระบบกำลังประมวลผลอยู่แน่นอน ✨
+              </span>
+            </div>
+
+            <div className="w-full bg-pink-100 h-1.5 rounded-full overflow-hidden">
+              <div className="bg-gradient-to-r from-pink-400 to-rose-500 h-full w-2/3 animate-pulse rounded-full" />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hidden File Input for Native Camera/Gallery Picker */}
       <input
         type="file"
@@ -390,9 +422,12 @@ export default function AddPage() {
 
         {/* Dynamic View: Scanning Loader OR Slip Scan Result OR Category Grid */}
         {isScanning ? (
-          <div className="bg-white rounded-3xl p-8 border border-pink-100 shadow-xs flex flex-col items-center justify-center space-y-3 mb-4 font-body">
+          <div className="bg-white rounded-3xl p-6 border border-pink-100 shadow-xs flex flex-col items-center justify-center space-y-3 mb-4 font-body">
             <Loader2 size={32} className="text-[var(--color-primary)] animate-spin" />
-            <p className="text-xs font-bold text-gray-700 animate-pulse font-body">กำลังอ่านข้อมูลจากใบเสร็จ...</p>
+            <p className="text-xs font-bold text-gray-800 font-body">กำลังสแกนอ่านข้อมูลใบเสร็จ...</p>
+            <div className="bg-pink-50 border border-pink-100 rounded-2xl p-3 text-[11px] text-pink-700 leading-relaxed text-center font-body w-full">
+              ⚡ <b>กำลังสแกนอยู่...</b> หากเป็นการใช้งานครั้งแรกของวัน เซิร์ฟเวอร์อาจใช้เวลา 10–30 วินาทีในการเริ่มต้น (Render Cold Start) กรุณารอสักครู่นะครับ ✨
+            </div>
           </div>
         ) : scanResult ? (
           /* Slip Scan Result Card & Date Banner */
