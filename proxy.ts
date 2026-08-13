@@ -13,15 +13,6 @@ export async function proxy(request: NextRequest) {
 
   if (isPublicAsset) return NextResponse.next({ request })
 
-  // 2. Forward OAuth ?code=... parameter to /auth/callback WITH ALL COOKIES PRESERVED (PKCE code_verifier cookie)
-  if (searchParams.has('code') && !pathname.startsWith('/auth/callback')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/auth/callback'
-    const redirectResponse = NextResponse.redirect(url)
-    request.cookies.getAll().forEach(c => redirectResponse.cookies.set(c.name, c.value, c))
-    return redirectResponse
-  }
-
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 
@@ -50,6 +41,30 @@ export async function proxy(request: NextRequest) {
         },
       }
     )
+
+    // 2. Direct Middleware OAuth Code Exchange:
+    // If OAuth ?code=... param arrives at ANY URL, exchange it immediately in middleware where request.cookies (PKCE code_verifier) is active!
+    if (searchParams.has('code')) {
+      const code = searchParams.get('code')!
+      try {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (!error) {
+          const cleanUrl = request.nextUrl.clone()
+          cleanUrl.pathname = '/'
+          cleanUrl.searchParams.delete('code')
+
+          const redirectResponse = NextResponse.redirect(cleanUrl)
+          supabaseResponse.cookies.getAll().forEach(c =>
+            redirectResponse.cookies.set(c.name, c.value, c)
+          )
+          return redirectResponse
+        } else {
+          console.error('Middleware OAuth exchangeCodeForSession error:', error)
+        }
+      } catch (err) {
+        console.error('Middleware OAuth exchange code exception:', err)
+      }
+    }
 
     // Refresh auth session & validate user token
     const { data: { user } } = await supabase.auth.getUser()
