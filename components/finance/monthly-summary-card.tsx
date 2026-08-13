@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ChevronDown, ChevronLeft, ChevronRight, SlidersHorizontal, Sparkles, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 
@@ -23,6 +24,7 @@ export default function MonthlySummaryCard({
   dailySpendingMap = {},
   onUpdateDailyTarget,
 }: MonthlySummaryCardProps) {
+  const router = useRouter()
   const [currentDate, setCurrentDate] = useState(new Date(2026, 7, 12)) // Aug 2026
   const [showTargetModal, setShowTargetModal] = useState(false)
   const [customTargetInput, setCustomTargetInput] = useState('')
@@ -153,31 +155,23 @@ export default function MonthlySummaryCard({
             <span>คุณยังไม่มีเป้าหมายรายวัน 🎯</span>
           </div>
           <p className="text-[11px] opacity-90 leading-relaxed font-body">
-            หากต้องการแสดงผลปฏิทิน Heatmap ความถี่รายวัน สามารถกดปุ่มด้านล่างเพื่อตั้งเป้าหมายรายวันได้เลยครับ
+            หากต้องการแสดงผลปฏิทิน Heatmap ความถี่รายวัน สามารถกดปุ่มด้านล่างเพื่อย้ายไปตั้งเป้าหมายรายวันในหน้าเมนูได้เลยครับ
           </p>
           <button
-            onClick={() => setShowTargetModal(true)}
-            className="w-full py-2 px-3 rounded-xl bg-white text-[var(--color-primary)] font-bold text-xs shadow-xs hover:bg-pink-50 active:scale-95 transition-all flex items-center justify-center gap-1 font-body"
+            onClick={() => router.push('/settings')}
+            className="w-full py-2.5 px-3 rounded-xl bg-white text-[var(--color-primary)] font-bold text-xs shadow-xs hover:bg-pink-50 active:scale-95 transition-all flex items-center justify-center gap-1.5 font-body"
           >
-            🎯 ตั้งเป้าหมายรายวันเพื่อโชว์ Heatmap (คลิกตรงนี้)
+            ⚙️ ย้ายไปตั้งเป้าหมายรายวันในหน้าเมนู (คลิกตรงนี้)
           </button>
         </div>
       )}
 
-      {/* Heatmap Legend & Pulsing Notification Pill */}
+      {/* Heatmap Legend */}
       <div className="flex items-center justify-between text-[11px] text-gray-500 mb-2 px-1 font-body">
-        <button 
-          onClick={() => setShowTargetModal(true)}
-          className={`flex items-center gap-1 font-body transition-all active:scale-95 ${
-            dailyTarget === 0
-              ? 'animate-pulse text-white bg-gradient-to-r from-pink-500 to-rose-600 px-3 py-1 rounded-full font-bold shadow-md border border-pink-300 ring-2 ring-pink-400/50'
-              : 'text-gray-700 hover:text-[var(--color-primary)] font-bold bg-pink-50/70 px-2.5 py-0.5 rounded-full border border-pink-100'
-          }`}
-          title="คลิกเพื่อตั้งหรือแก้ไขเป้าหมายรายวัน"
-        >
-          <span>🎯 เป้าหมายรายวัน:</span> 
-          <span className="font-mono">{dailyTarget === 0 ? 'ยังไม่กำหนด (คลิกตรงนี้นะ) ✏️' : `฿${dailyTarget}`}</span>
-        </button>
+        <div className="flex items-center gap-1 text-gray-600 font-bold bg-pink-50/70 px-2.5 py-0.5 rounded-full border border-pink-100">
+          <span>🎯 เป้าหมายรายวัน:</span>
+          <span className="font-mono text-pink-600">{dailyTarget === 0 ? '฿0 (ยังไม่ได้ตั้งค่า)' : `฿${dailyTarget}`}</span>
+        </div>
 
         <div className="flex items-center gap-1 shrink-0 font-body">
           <span>น้อย</span>
