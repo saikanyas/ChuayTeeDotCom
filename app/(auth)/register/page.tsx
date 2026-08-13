@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
+import logoImg from '@/app/CatWalletLogo-512px.png'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -44,10 +46,13 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ backgroundColor: 'var(--color-bg)', backgroundImage: 'linear-gradient(to bottom, var(--color-surface-tint), transparent)' }}>
       <div className="w-full max-w-sm flex flex-col items-center">
-        <img 
-          src="/logo.png" 
+        <Image 
+          src={logoImg} 
           alt="ช่วยที.com Logo" 
+          width={80}
+          height={80}
           className="w-20 h-20 rounded-3xl object-cover shadow-md mb-4 hover:scale-105 transition-transform" 
+          priority
         />
         <h1 className="text-3xl font-display font-bold mb-2 text-center" style={{ color: 'var(--color-text-primary)' }}>สมัครสมาชิก</h1>
         <p className="text-center mb-8" style={{ color: 'var(--color-text-second)' }}>เริ่มจัดการเงินของคุณวันนี้</p>

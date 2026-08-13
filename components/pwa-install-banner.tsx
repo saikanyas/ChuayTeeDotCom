@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image'
+import logoImg from '@/app/CatWalletLogo-512px.png'
 import { useEffect, useState } from 'react'
 import { Download, CheckCircle2, Share } from 'lucide-react'
 
@@ -66,7 +68,13 @@ export default function PWAInstallBanner() {
   return (
     <div className="bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-2xl p-4 flex items-center justify-between shadow-md font-body">
       <div className="flex items-center gap-3">
-        <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-xl bg-white p-0.5 shadow-xs shrink-0 object-cover" />
+        <Image 
+          src={logoImg} 
+          alt="Logo" 
+          width={40}
+          height={40}
+          className="w-10 h-10 rounded-xl bg-white p-0.5 shadow-xs shrink-0 object-cover" 
+        />
         <div>
           <p className="font-bold text-sm">ติดตั้งแอป ช่วยที.com</p>
           <p className="text-[11px] opacity-90">ใช้งานลื่นไหล เปิดได้จากหน้าจอมือถือ</p>
