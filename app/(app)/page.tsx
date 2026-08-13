@@ -57,16 +57,22 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => {
-    if (swrTxs && swrTxs.length >= 0) setTransactions(swrTxs)
-  }, [swrTxs, setTransactions])
+    if (swrTxs && JSON.stringify(swrTxs) !== JSON.stringify(transactions)) {
+      setTransactions(swrTxs)
+    }
+  }, [swrTxs, transactions, setTransactions])
 
   useEffect(() => {
-    if (swrAccs && swrAccs.length >= 0) setAccounts(swrAccs)
-  }, [swrAccs, setAccounts])
+    if (swrAccs && JSON.stringify(swrAccs) !== JSON.stringify(accounts)) {
+      setAccounts(swrAccs)
+    }
+  }, [swrAccs, accounts, setAccounts])
 
   useEffect(() => {
-    if (swrGoals && swrGoals.length >= 0) setGoals(swrGoals)
-  }, [swrGoals, setGoals])
+    if (swrGoals && JSON.stringify(swrGoals) !== JSON.stringify(goals)) {
+      setGoals(swrGoals)
+    }
+  }, [swrGoals, goals, setGoals])
 
   // Dynamic calculations from current transactions & accounts state
   const totalWalletsBalance = accounts.reduce((sum, acc) => sum + Number(acc.balance || 0), 0)

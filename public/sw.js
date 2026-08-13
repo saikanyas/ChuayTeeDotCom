@@ -38,6 +38,10 @@ self.addEventListener('activate', (event) => {
 })
 
 self.addEventListener('fetch', (event) => {
+  // Only handle GET requests for same origin
+  if (event.request.method !== 'GET') return
+  if (!event.request.url.startsWith(self.location.origin)) return
+
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => {
@@ -52,10 +56,10 @@ self.addEventListener('fetch', (event) => {
       return (
         response ||
         fetch(event.request).catch(() => {
-          // Fallback for image requests if offline
           if (event.request.destination === 'image') {
             return caches.match('/icon.png')
           }
+          return new Response('', { status: 408, statusText: 'Request Timed Out' })
         })
       )
     })
