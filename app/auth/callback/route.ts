@@ -24,15 +24,20 @@ export async function GET(request: NextRequest) {
         supabaseUrl,
         supabaseKey,
         {
+          cookieOptions: {
+            path: '/',
+            sameSite: 'lax',
+            secure: true,
+          },
           cookies: {
             getAll() { return cookieStore.getAll() },
             setAll(cookiesToSet) {
               cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
+                cookieStore.set(name, value, { ...options, path: '/', sameSite: 'lax', secure: true })
               )
               redirectResponse = NextResponse.redirect(`${origin}${next}`)
               cookiesToSet.forEach(({ name, value, options }) =>
-                redirectResponse.cookies.set(name, value, options)
+                redirectResponse.cookies.set(name, value, { ...options, path: '/', sameSite: 'lax', secure: true })
               )
             },
           },

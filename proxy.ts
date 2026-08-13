@@ -18,7 +18,7 @@ export async function proxy(request: NextRequest) {
     const url = new URL('/auth/callback', request.url)
     url.searchParams.set('code', searchParams.get('code')!)
     const redirectResponse = NextResponse.redirect(url)
-    request.cookies.getAll().forEach(c => redirectResponse.cookies.set(c.name, c.value, c))
+    request.cookies.getAll().forEach(c => redirectResponse.cookies.set(c.name, c.value, { ...c, path: '/', sameSite: 'lax', secure: true }))
     return redirectResponse
   }
 
@@ -36,6 +36,11 @@ export async function proxy(request: NextRequest) {
       supabaseUrl,
       supabaseKey,
       {
+        cookieOptions: {
+          path: '/',
+          sameSite: 'lax',
+          secure: true,
+        },
         cookies: {
           getAll() {
             return request.cookies.getAll()
@@ -44,7 +49,7 @@ export async function proxy(request: NextRequest) {
             cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
             supabaseResponse = NextResponse.next({ request })
             cookiesToSet.forEach(({ name, value, options }) =>
-              supabaseResponse.cookies.set(name, value, options)
+              supabaseResponse.cookies.set(name, value, { ...options, path: '/', sameSite: 'lax', secure: true })
             )
           },
         },
@@ -61,7 +66,7 @@ export async function proxy(request: NextRequest) {
         url.searchParams.set('error', searchParams.get('error')!)
       }
       const redirectResponse = NextResponse.redirect(url)
-      supabaseResponse.cookies.getAll().forEach(c => redirectResponse.cookies.set(c.name, c.value, c))
+      supabaseResponse.cookies.getAll().forEach(c => redirectResponse.cookies.set(c.name, c.value, { ...c, path: '/', sameSite: 'lax', secure: true }))
       return redirectResponse
     }
 
@@ -69,7 +74,7 @@ export async function proxy(request: NextRequest) {
     if (user && (pathname === '/login' || pathname === '/register')) {
       const url = new URL('/', request.url)
       const redirectResponse = NextResponse.redirect(url)
-      supabaseResponse.cookies.getAll().forEach(c => redirectResponse.cookies.set(c.name, c.value, c))
+      supabaseResponse.cookies.getAll().forEach(c => redirectResponse.cookies.set(c.name, c.value, { ...c, path: '/', sameSite: 'lax', secure: true }))
       return redirectResponse
     }
   } catch (err) {
