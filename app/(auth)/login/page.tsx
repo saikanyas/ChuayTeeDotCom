@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
-import logoImg from '@/app/CatWalletLogo-512px.png'
+import logoImg from '@/app/CatWalletLogo-1024px.png'
 
 const loginSchema = z.object({
   email: z.string().email(),

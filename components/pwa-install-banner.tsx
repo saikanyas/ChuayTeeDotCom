@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import logoImg from '@/app/CatWalletLogo-512px.png'
+import logoImg from '@/app/CatWalletLogo-1024px.png'
 import { useEffect, useState } from 'react'
 import { Download, CheckCircle2, Share } from 'lucide-react'
 
