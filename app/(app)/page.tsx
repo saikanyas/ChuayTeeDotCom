@@ -14,7 +14,10 @@ import * as AccountsDB from '@/lib/supabase/accounts'
 import { ChevronDown, Menu, Plus, Target, Sparkles, X, AlertCircle, Trash2 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
+import { useRouter } from 'next/navigation'
+
 export default function DashboardPage() {
+  const router = useRouter()
   const { transactions, setTransactions, accounts, setAccounts, goals, setGoals, addGoal, removeGoal, dailyTarget } = useFinanceStore()
   const [user, setUser] = useState<any>(null)
   const [activeHeaderTab, setActiveHeaderTab] = useState('ภาพรวม')
@@ -188,7 +191,11 @@ export default function DashboardPage() {
           <button className="flex items-center gap-1 bg-white/80 px-3 py-1 rounded-full text-xs font-semibold text-gray-700 border border-gray-200/80 shadow-2xs font-body">
             THB <ChevronDown size={14} />
           </button>
-          <button className="w-8 h-8 rounded-full bg-white/80 border border-gray-200/80 flex items-center justify-center text-gray-700 shadow-2xs">
+          <button 
+            onClick={() => router.push('/settings')} 
+            className="w-8 h-8 rounded-full bg-white/80 border border-gray-200/80 flex items-center justify-center text-gray-700 shadow-2xs hover:bg-gray-50 active:scale-95 transition-all"
+            title="ตั้งค่าและเมนู"
+          >
             <Menu size={16} />
           </button>
         </div>

@@ -19,7 +19,11 @@ export default function SettingsPage() {
 
   const signOut = async () => {
     await supabase.auth.signOut()
-    router.push('/login')
+    // Clear client-side cache
+    useFinanceStore.getState().setAccounts([])
+    useFinanceStore.getState().setTransactions([])
+    useFinanceStore.getState().setGoals([])
+    window.location.href = '/login'
   }
 
   const handleTargetChange = (val: string) => {

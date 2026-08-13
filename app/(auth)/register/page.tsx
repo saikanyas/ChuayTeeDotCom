@@ -38,7 +38,7 @@ export default function RegisterPage() {
     })
     
     if (authError) setError(authError.message)
-    else router.push('/')
+    else window.location.href = '/'
   }
 
   return (

@@ -28,8 +28,11 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     setError('')
     const { error } = await supabase.auth.signInWithPassword(data)
-    if (error) setError(error.message)
-    else router.push('/')
+    if (error) {
+      setError(error.message)
+    } else {
+      window.location.href = '/'
+    }
   }
 
   const handleGoogleLogin = async () => {

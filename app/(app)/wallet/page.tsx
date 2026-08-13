@@ -121,7 +121,7 @@ export default function WalletPage() {
     }
   }
 
-  // Handle Save New Account — persists to Supabase
+  // Handle Save New Account — persists to Supabase & local state
   const handleCreateAccount = async () => {
     if (!newAccName.trim()) {
       setNameError('กรุณากรอกชื่อกระเป๋าเงินก่อนบันทึกนะครับ ⚠️')
@@ -130,20 +130,43 @@ export default function WalletPage() {
     setNameError(null)
 
     const bal = parseFloat(newAccBalance) || 0
+    const fallbackId = 'acc_' + Date.now()
+
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const created = await AccountsDB.createAccount(user.id, {
+      if (user) {
+        const created = await AccountsDB.createAccount(user.id, {
+          name: newAccName.trim(),
+          type: newAccType,
+          balance: bal,
+          icon: selectedIcon,
+          color: '#FF3478',
+        })
+        addAccount(created)
+      } else {
+        // Fallback for offline / guest state
+        addAccount({
+          id: fallbackId,
+          name: newAccName.trim(),
+          type: newAccType,
+          balance: bal,
+          icon: selectedIcon,
+          color: '#FF3478',
+        })
+      }
+    } catch (e: any) {
+      console.error('createAccount failed:', e)
+      // Optimistic fallback on DB error so UI is never blocked
+      addAccount({
+        id: fallbackId,
         name: newAccName.trim(),
         type: newAccType,
         balance: bal,
         icon: selectedIcon,
         color: '#FF3478',
       })
-      addAccount(created)
-    } catch (e) {
-      console.error('createAccount failed:', e)
     }
+
     setNewAccName('')
     setNewAccBalance('')
     setSelectedIcon('💵')
