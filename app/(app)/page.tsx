@@ -20,7 +20,7 @@ import { LUCIDE_CATEGORY_ICON_MAP } from '@/lib/utils'
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { transactions, setTransactions, accounts, setAccounts, goals, setGoals, addGoal, removeGoal, dailyTarget } = useFinanceStore()
+  const { transactions, setTransactions, accounts, setAccounts, goals, setGoals, addGoal, removeGoal, dailyTarget, setDailyTarget } = useFinanceStore()
   const [user, setUser] = useState<any>(null)
   const [activeHeaderTab, setActiveHeaderTab] = useState('ภาพรวม')
   const [displayType, setDisplayType] = useState<'expense' | 'income'>('expense')
@@ -41,6 +41,10 @@ export default function DashboardPage() {
       const { data: { user: u } } = await supabase.auth.getUser()
       setUser(u)
       if (!u) return
+      
+      const savedTarget = localStorage.getItem(`daily_target_${u.id}`)
+      setDailyTarget(savedTarget ? Number(savedTarget) : 0)
+
       try {
         const txs = await TransactionsDB.getTransactions(u.id)
         setTransactions(txs)
@@ -234,6 +238,12 @@ export default function DashboardPage() {
                   netBalance={netBalance}
                   dailyTarget={dailyTarget}
                   dailySpendingMap={dailySpendingMap}
+                  onUpdateDailyTarget={(newVal) => {
+                    setDailyTarget(newVal)
+                    if (user?.id) {
+                      localStorage.setItem(`daily_target_${user.id}`, newVal.toString())
+                    }
+                  }}
                 />
               </div>
             </motion.div>

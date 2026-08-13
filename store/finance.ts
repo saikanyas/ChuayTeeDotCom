@@ -93,7 +93,7 @@ export const useFinanceStore = create<FinanceStore>((set) => ({
   goals: [],
   selectedAccount: null,
   isLoading: false,
-  dailyTarget: 300,
+  dailyTarget: 0,
   pendingScanFile: null,
 
   setTransactions: (transactions) => set({ transactions }),
