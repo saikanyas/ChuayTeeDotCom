@@ -22,14 +22,17 @@ export async function processRealSlipOCR(file: File): Promise<RealOCRResult> {
   let bank = 'PromptPay (พร้อมเพย์)'
   if (/กสิกร|kbank|kasikorn|k\+/i.test(rawText)) bank = 'KBank (กสิกรไทย)'
   else if (/ไทยพาณิชย์|scb/i.test(rawText)) bank = 'SCB (ไทยพาณิชย์)'
-  else if (/กรุงไทย|ktb/i.test(rawText)) bank = 'KTB (กรุงไทย)'
+  else if (/กรุงไทย|ktb|next/i.test(rawText)) bank = 'KTB (กรุงไทย)'
   else if (/กรุงเทพ|bbl|bangkok/i.test(rawText)) bank = 'Bangkok Bank (กรุงเทพ)'
   else if (/ออมสิน|gsb/i.test(rawText)) bank = 'GSB (ออมสิน)'
   else if (/ทหารไทย|ttb/i.test(rawText)) bank = 'ttb (ทหารไทยธนชาต)'
+  else if (/truemoney|ทรูมันนี่|วอลเล็ท/i.test(rawText)) bank = 'TrueMoney Wallet'
+  else if (/เป๋าตัง|paotang|g-wallet|ถุงเงิน|ไทยช่วยไทย/i.test(rawText)) bank = 'เป๋าตัง (G-Wallet)'
 
   // 2. Extract Amount
-  let amount = 39 // Fallback to 39 if parse fails
-  const amountMatch = rawText.match(/(?:จำนวน|amount|ยอดเงิน)[:\s]*([0-9,]+\.[0-9]{2})/i) ||
+  let amount = 0
+  const amountMatch = rawText.match(/(?:จำนวนเงินที่ชำระ|จำนวนเงิน|จำนวน|ยอดรวมทั้งหมด|ยอดชำระ|ค่าสินค้า\/บริการ|amount|total|ยอดเงิน)[:\s]*฿?\s*([0-9,]+\.?[0-9]{0,2})/i) ||
+                      rawText.match(/฿\s*([0-9,]+\.[0-9]{2})/i) ||
                       rawText.match(/([0-9,]+\.[0-9]{2})\s*(?:บาท|THB)/i) ||
                       rawText.match(/([0-9,]+\.[0-9]{2})/)
 

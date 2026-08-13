@@ -52,37 +52,45 @@ class KrungthaiParser(BankParser):
                 receiver = m.group(1).strip()
 
         # --- Amount -------------------------------------------------------
-        # KTB NEXT format: "จำนวน  ฿1,234.00" or "1,234.00 บาท"
+        # KTB NEXT format: "จำนวนเงิน 200.00 บาท" or "จำนวน  ฿1,234.00" or "1,234.00 บาท"
         amount = None
-        m = re.search(r"จำนวน[^\d฿]*(฿)?\s*([\d,]+\.\d{2})", text)
+        m = re.search(r"(?:จำนวนเงิน|จำนวนเงินที่ชำระ|จำนวน)[^\d฿]*?(?:฿)?\s*([\d,]+\.?\d{0,2})", text, re.IGNORECASE)
         if m:
-            amount = float(m.group(2).replace(",", ""))
-        else:
+            try:
+                amount = float(m.group(1).replace(",", ""))
+            except ValueError:
+                amount = None
+
+        if not amount:
             amount = self._extract_amount(text)
 
         # --- Date / Time --------------------------------------------------
-        # KTB NEXT format: "วันที่ 12 สิงหาคม 2567  เวลา 23:16:00"
+        # KTB NEXT format: "วันที่ 12 สิงหาคม 2567  เวลา 23:16:00" or "10 ส.ค. 2569 - 12:16"
         date = None
         time = None
-        full_th_months = {
-            "มกราคม": "01", "กุมภาพันธ์": "02", "มีนาคม": "03",
-            "เมษายน": "04", "พฤษภาคม": "05", "มิถุนายน": "06",
-            "กรกฎาคม": "07", "สิงหาคม": "08", "กันยายน": "09",
-            "ตุลาคม": "10", "พฤศจิกายน": "11", "ธันวาคม": "12",
+        th_months = {
+            "มกราคม": "01", "กุมภาพันธ์": "02", "มีนาคม": "03", "เมษายน": "04",
+            "พฤษภาคม": "05", "มิถุนายน": "06", "กรกฎาคม": "07", "สิงหาคม": "08",
+            "กันยายน": "09", "ตุลาคม": "10", "พฤศจิกายน": "11", "ธันวาคม": "12",
+            "ม.ค.": "01", "ก.พ.": "02", "มี.ค.": "03", "เม.ย.": "04",
+            "พ.ค.": "05", "มิ.ย.": "06", "ก.ค.": "07", "ส.ค.": "08",
+            "ก.ย.": "09", "ต.ค.": "10", "พ.ย.": "11", "ธ.ค.": "12",
+            "ม.ค": "01", "ก.พ": "02", "มี.ค": "03", "เม.ย": "04",
+            "พ.ค": "05", "มิ.ย": "06", "ก.ค": "07", "ส.ค": "08",
+            "ก.ย": "09", "ต.ค": "10", "พ.ย": "11", "ธ.ค": "12",
         }
-        pattern = (
-            r"วันที่\s*(\d{1,2})\s+"
-            r"(" + "|".join(full_th_months.keys()) + r")\s+"
-            r"(\d{4})"
-            r"(?:\s+เวลา\s+(\d{2}:\d{2}(?::\d{2})?))?",
+        month_keys = "|".join(re.escape(k) for k in th_months.keys())
+        dt_match = re.search(
+            r"(?:วันที่(?:ทำรายการ)?\s*)?(\d{1,2})\s*(" + month_keys + r")\s*(\d{4})\s*[-–\s]*\s*(\d{2}:\d{2}(?::\d{2})?)",
+            text,
+            re.IGNORECASE,
         )
-        dt_match = re.search(pattern[0], text)
         if dt_match:
             day, month_th, year, time_str = dt_match.groups()
             year_int = int(year)
             if year_int > 2400:
                 year_int -= 543
-            month_num = full_th_months.get(month_th, "00")
+            month_num = th_months.get(month_th, "01")
             date = f"{year_int}-{month_num}-{int(day):02d}"
             time = time_str
         else:

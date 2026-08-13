@@ -14,7 +14,9 @@ from app.parsers.bangkok_bank import BangkokBankParser
 from app.parsers.generic import GenericParser
 from app.parsers.kbank import KBankParser
 from app.parsers.krungthai import KrungthaiParser
+from app.parsers.paotang import PaotangParser
 from app.parsers.scb import SCBParser
+from app.parsers.truemoney import TrueMoneyParser
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,8 @@ _BANK_SIGNATURES: dict[str, list[str]] = {
     "scb": ["SCB", "ไทยพาณิชย์", "SCB Easy", "easy net"],
     "krungthai": ["KTB", "กรุงไทย", "Krungthai", "NEXT", "PromptPay KTB"],
     "bangkok_bank": ["BBL", "กรุงเทพ", "Bangkok Bank", "Bualuang", "bualuang"],
+    "truemoney": ["TRUEMONEY", "ทรูมันนี่", "วอลเล็ท", "WALLET"],
+    "paotang": ["เป๋าตัง", "PAOTANG", "G-WALLET", "ถุงเงิน", "ไทยช่วยไทย"],
 }
 
 _PARSERS = {
@@ -30,6 +34,8 @@ _PARSERS = {
     "scb": SCBParser(),
     "krungthai": KrungthaiParser(),
     "bangkok_bank": BangkokBankParser(),
+    "truemoney": TrueMoneyParser(),
+    "paotang": PaotangParser(),
     "generic": GenericParser(),
 }
 
