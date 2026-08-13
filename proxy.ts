@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
+  
+  // Public static assets & routes that never require auth middleware checks
   const isAuthRoute   = pathname.startsWith('/login') || pathname.startsWith('/auth') || pathname.startsWith('/register')
   const isPublicAsset = pathname.startsWith('/_next') || pathname.startsWith('/icons') ||
                         pathname === '/manifest.json' || pathname === '/sw.js' ||
@@ -11,12 +13,11 @@ export async function proxy(request: NextRequest) {
 
   if (isPublicAsset) return NextResponse.next({ request })
 
+  // Prioritize NEXT_PUBLIC_SUPABASE_ANON_KEY from Vercel Supabase Integration
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 
-  // Safety guard: If Vercel env vars are not configured yet, prevent Middleware crash
   if (!supabaseUrl || !supabaseKey) {
-    console.warn('Supabase Environment Variables missing on Vercel.')
     return NextResponse.next({ request })
   }
 
@@ -28,7 +29,9 @@ export async function proxy(request: NextRequest) {
       supabaseKey,
       {
         cookies: {
-          getAll() { return request.cookies.getAll() },
+          getAll() {
+            return request.cookies.getAll()
+          },
           setAll(cookiesToSet) {
             cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
             supabaseResponse = NextResponse.next({ request })
@@ -40,14 +43,18 @@ export async function proxy(request: NextRequest) {
       }
     )
 
+    // Validate auth token
     const { data: { user } } = await supabase.auth.getUser()
 
+    // Protect private routes: Redirect unauthenticated users to /login
     if (!user && !isAuthRoute) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       return NextResponse.redirect(url)
     }
-    if (user && isAuthRoute) {
+
+    // Redirect authenticated users away from login/register
+    if (user && (pathname === '/login' || pathname === '/register')) {
       const url = request.nextUrl.clone()
       url.pathname = '/'
       return NextResponse.redirect(url)
