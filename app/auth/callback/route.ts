@@ -2,18 +2,13 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ccqhglbmdqtnacgobidw.supabase.co'
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/'
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-
-  if (!supabaseUrl || !supabaseKey) {
-    console.error('Supabase env vars missing in callback route')
-    return NextResponse.redirect(`${origin}/login?error=missing_env`)
-  }
 
   if (code) {
     try {
@@ -21,10 +16,11 @@ export async function GET(request: NextRequest) {
       let redirectResponse = NextResponse.redirect(`${origin}${next}`)
 
       const supabase = createServerClient(
-        supabaseUrl,
-        supabaseKey,
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY,
         {
           cookieOptions: {
+            name: 'sb-ccqhglbmdqtnacgobidw-auth-token',
             path: '/',
             sameSite: 'lax',
             secure: true,
