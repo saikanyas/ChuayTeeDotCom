@@ -10,8 +10,8 @@ export default function NoWalletGuard() {
   const router = useRouter()
   const pathname = usePathname()
 
-  // Do not block if user already has wallets OR is currently on the /wallet page
-  if (accounts.length > 0 || pathname === '/wallet') {
+  // Only block when user is on the /add page AND has 0 accounts
+  if (accounts.length > 0 || pathname !== '/add') {
     return null
   }
 
@@ -32,7 +32,7 @@ export default function NoWalletGuard() {
           <div className="space-y-1">
             <h3 className="font-bold text-lg text-gray-800 font-body">ยังไม่มีกระเป๋าเงิน!</h3>
             <p className="text-xs text-gray-500 font-body leading-relaxed">
-              กรุณาเพิ่มกระเป๋าเงินอย่างน้อย 1 ใบ ก่อนเริ่มบันทึกรายรับ-รายจ่ายนะ 💰
+              กรุณาเพิ่มกระเป๋าเงินอย่างน้อย 1 ใบ ก่อนเริ่มบันทึกทำธุรกรรมนะ 💰
             </p>
           </div>
 
