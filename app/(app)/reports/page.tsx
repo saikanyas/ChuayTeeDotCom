@@ -23,10 +23,10 @@ export default function ReportsPage() {
   }, [])
 
   useEffect(() => {
-    if (swrTxs && swrTxs.length >= 0) {
+    if (swrTxs && JSON.stringify(swrTxs) !== JSON.stringify(transactions)) {
       setTransactions(swrTxs)
     }
-  }, [swrTxs, setTransactions])
+  }, [swrTxs, transactions, setTransactions])
 
   const totalExpense = transactions
     .filter(t => t.type === 'expense')

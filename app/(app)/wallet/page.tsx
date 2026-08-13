@@ -58,10 +58,10 @@ export default function WalletPage() {
   }, [])
 
   useEffect(() => {
-    if (swrAccs && swrAccs.length >= 0) {
+    if (swrAccs && JSON.stringify(swrAccs) !== JSON.stringify(accounts)) {
       setAccounts(swrAccs)
     }
-  }, [swrAccs, setAccounts])
+  }, [swrAccs, accounts, setAccounts])
 
   // Handle File Upload with 3MB Limit Enforcement
   const handleIconFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -70,12 +70,16 @@ export default function TransactionsPage() {
   }, [])
 
   useEffect(() => {
-    if (swrTxs && swrTxs.length >= 0) setTransactions(swrTxs)
-  }, [swrTxs, setTransactions])
+    if (swrTxs && JSON.stringify(swrTxs) !== JSON.stringify(transactions)) {
+      setTransactions(swrTxs)
+    }
+  }, [swrTxs, transactions, setTransactions])
 
   useEffect(() => {
-    if (swrAccs && swrAccs.length >= 0) setAccounts(swrAccs)
-  }, [swrAccs, setAccounts])
+    if (swrAccs && JSON.stringify(swrAccs) !== JSON.stringify(accounts)) {
+      setAccounts(swrAccs)
+    }
+  }, [swrAccs, accounts, setAccounts])
 
   const filteredTransactions = transactions.filter(t => {
     const matchesSearch = (t.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||

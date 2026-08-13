@@ -96,15 +96,27 @@ export const useFinanceStore = create<FinanceStore>((set) => ({
   dailyTarget: 0,
   pendingScanFile: null,
 
-  setTransactions: (transactions) => set({ transactions }),
-  setCategories: (categories) => set({ categories }),
-  setAccounts: (accounts) => set((state) => ({
-    accounts,
-    selectedAccount: state.selectedAccount
-      ? (accounts.find(a => a.id === state.selectedAccount!.id) ?? accounts[0] ?? null)
-      : (accounts[0] ?? null),
-  })),
-  setGoals: (goals) => set({ goals }),
+  setTransactions: (transactions) => set((state) => {
+    if (JSON.stringify(state.transactions) === JSON.stringify(transactions)) return state
+    return { transactions }
+  }),
+  setCategories: (categories) => set((state) => {
+    if (JSON.stringify(state.categories) === JSON.stringify(categories)) return state
+    return { categories }
+  }),
+  setAccounts: (accounts) => set((state) => {
+    if (JSON.stringify(state.accounts) === JSON.stringify(accounts)) return state
+    return {
+      accounts,
+      selectedAccount: state.selectedAccount
+        ? (accounts.find(a => a.id === state.selectedAccount!.id) ?? accounts[0] ?? null)
+        : (accounts[0] ?? null),
+    }
+  }),
+  setGoals: (goals) => set((state) => {
+    if (JSON.stringify(state.goals) === JSON.stringify(goals)) return state
+    return { goals }
+  }),
   setSelectedAccount: (selectedAccount) => set({ selectedAccount }),
   setLoading: (isLoading) => set({ isLoading }),
   setDailyTarget: (dailyTarget) => set({ dailyTarget }),
