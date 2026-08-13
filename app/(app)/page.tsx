@@ -15,6 +15,7 @@ import { ChevronDown, Menu, Plus, Target, Sparkles, X, AlertCircle, Trash2 } fro
 import DynamicBarChart from '@/components/finance/charts/dynamic-bar-chart'
 import DynamicPieChart from '@/components/finance/charts/dynamic-pie-chart'
 
+import PWAInstallBanner from '@/components/pwa-install-banner'
 import { useRouter } from 'next/navigation'
 import { LUCIDE_CATEGORY_ICON_MAP } from '@/lib/utils'
 import { useTransactions } from '@/hooks/use-transactions'
@@ -235,6 +236,11 @@ export default function DashboardPage() {
                 dateTitle={`${displayType === 'expense' ? 'รายจ่าย' : 'รายรับ'} 8 สิงหาคม`}
                 categories={categorySummaries}
               />
+
+              {/* PWA Install Banner */}
+              <div className="mt-4">
+                <PWAInstallBanner />
+              </div>
 
               {/* Monthly Summary & Full Month Calendar Heatmap Card */}
               <div className="mt-4">
