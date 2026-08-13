@@ -1,4 +1,4 @@
-"""FastAPI application factory for the Thai Bank Slip OCR service."""
+"""FastAPI application factory for the Thai Bank Slip OCR service (EasyOCR PyTorch CPU)."""
 
 from __future__ import annotations
 
