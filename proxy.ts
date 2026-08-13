@@ -13,11 +13,13 @@ export async function proxy(request: NextRequest) {
 
   if (isPublicAsset) return NextResponse.next({ request })
 
-  // 2. If OAuth ?code=... parameter arrives at ANY route (e.g. /?code=...), forward to /auth/callback to exchange for session cookies
+  // 2. Forward OAuth ?code=... parameter to /auth/callback WITH ALL COOKIES PRESERVED (PKCE code_verifier cookie)
   if (searchParams.has('code') && !pathname.startsWith('/auth/callback')) {
     const url = request.nextUrl.clone()
     url.pathname = '/auth/callback'
-    return NextResponse.redirect(url)
+    const redirectResponse = NextResponse.redirect(url)
+    request.cookies.getAll().forEach(c => redirectResponse.cookies.set(c.name, c.value, c))
+    return redirectResponse
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
