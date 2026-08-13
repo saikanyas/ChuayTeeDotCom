@@ -17,6 +17,9 @@ import DynamicPieChart from '@/components/finance/charts/dynamic-pie-chart'
 
 import { useRouter } from 'next/navigation'
 import { LUCIDE_CATEGORY_ICON_MAP } from '@/lib/utils'
+import { useTransactions } from '@/hooks/use-transactions'
+import { useAccounts } from '@/hooks/use-accounts'
+import { useGoals } from '@/hooks/use-goals'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -36,28 +39,33 @@ export default function DashboardPage() {
 
   const supabase = createClient()
 
+  const { transactions: swrTxs } = useTransactions(user?.id)
+  const { accounts: swrAccs } = useAccounts(user?.id)
+  const { goals: swrGoals } = useGoals(user?.id)
+
   useEffect(() => {
-    async function loadData() {
+    async function loadUser() {
       const { data: { user: u } } = await supabase.auth.getUser()
       setUser(u)
-      if (!u) return
-      
-      const savedTarget = localStorage.getItem(`daily_target_${u.id}`)
-      setDailyTarget(savedTarget ? Number(savedTarget) : 0)
-
-      try {
-        const txs = await TransactionsDB.getTransactions(u.id)
-        setTransactions(txs)
-        const accs = await AccountsDB.getAccounts(u.id)
-        setAccounts(accs)
-        const gs = await GoalsDB.getGoals(u.id)
-        setGoals(gs)
-      } catch (e) {
-        console.error('dashboard loadData failed:', e)
+      if (u) {
+        const savedTarget = localStorage.getItem(`daily_target_${u.id}`)
+        setDailyTarget(savedTarget ? Number(savedTarget) : 0)
       }
     }
-    loadData()
+    loadUser()
   }, [])
+
+  useEffect(() => {
+    if (swrTxs && swrTxs.length >= 0) setTransactions(swrTxs)
+  }, [swrTxs, setTransactions])
+
+  useEffect(() => {
+    if (swrAccs && swrAccs.length >= 0) setAccounts(swrAccs)
+  }, [swrAccs, setAccounts])
+
+  useEffect(() => {
+    if (swrGoals && swrGoals.length >= 0) setGoals(swrGoals)
+  }, [swrGoals, setGoals])
 
   // Dynamic calculations from current transactions & accounts state
   const totalWalletsBalance = accounts.reduce((sum, acc) => sum + Number(acc.balance || 0), 0)

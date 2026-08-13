@@ -12,7 +12,10 @@ import {
   Utensils, Coffee, Wine, Bus, Car, ShoppingBag, Fuel, Tv, Film, Home, Smartphone, 
   PiggyBank, HeartPulse, GraduationCap, HeartHandshake, Briefcase, BadgeDollarSign, Gift
 } from 'lucide-react'
-import * as SlipsDB from '@/lib/supabase/slips'
+import { getCachedSignedSlipUrl } from '@/lib/cache/slip-url-cache'
+import { useTransactions } from '@/hooks/use-transactions'
+import { useAccounts } from '@/hooks/use-accounts'
+import { useSWRConfig } from 'swr'
 import { formatThaiCurrency, getLucideCategoryIcon } from '@/lib/utils'
 
 const ALL_CATEGORIES = [
@@ -38,6 +41,7 @@ const ALL_CATEGORIES = [
 
 export default function TransactionsPage() {
   const { transactions, setTransactions, updateTransaction, deleteTransaction, accounts, setAccounts } = useFinanceStore()
+  const [user, setUser] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<'all' | 'expense' | 'income'>('all')
   const [selectedTx, setSelectedTx] = useState<any | null>(null)
@@ -54,22 +58,24 @@ export default function TransactionsPage() {
   const [editCategory, setEditCategory] = useState(ALL_CATEGORIES[0])
 
   const supabase = createClient()
+  const { mutate } = useSWRConfig()
+
+  const { transactions: swrTxs } = useTransactions(user?.id)
+  const { accounts: swrAccs } = useAccounts(user?.id)
 
   useEffect(() => {
-    async function loadData() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      try {
-        const txs = await TransactionsDB.getTransactions(user.id)
-        setTransactions(txs)
-        const accs = await AccountsDB.getAccounts(user.id)
-        setAccounts(accs)
-      } catch (e) {
-        console.error('loadData failed:', e)
-      }
-    }
-    loadData()
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setUser(data.user)
+    })
   }, [])
+
+  useEffect(() => {
+    if (swrTxs && swrTxs.length >= 0) setTransactions(swrTxs)
+  }, [swrTxs, setTransactions])
+
+  useEffect(() => {
+    if (swrAccs && swrAccs.length >= 0) setAccounts(swrAccs)
+  }, [swrAccs, setAccounts])
 
   const filteredTransactions = transactions.filter(t => {
     const matchesSearch = (t.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -82,11 +88,9 @@ export default function TransactionsPage() {
     try {
       await TransactionsDB.deleteTransaction(id)
       deleteTransaction(id)
-      // Re-fetch accounts so balance reflects DB trigger revert
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const accs = await AccountsDB.getAccounts(user.id)
-        setAccounts(accs)
+      if (user?.id) {
+        mutate(['transactions', user.id])
+        mutate(['accounts', user.id])
       }
     } catch (e) {
       console.error('deleteTransaction failed:', e)
@@ -104,7 +108,7 @@ export default function TransactionsPage() {
         return
       }
       setIsLoadingSignedUrl(true)
-      const url = await SlipsDB.getSignedSlipUrl(selectedTx.slipUrl, 3600)
+      const url = await getCachedSignedSlipUrl(selectedTx.slipUrl, 600)
       setSignedSlipUrl(url)
       setIsLoadingSignedUrl(false)
     }
@@ -149,11 +153,9 @@ export default function TransactionsPage() {
         transaction_time: editTime,
         account_id: editAccount?.id,
       })
-      // Re-fetch accounts
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const accs = await AccountsDB.getAccounts(user.id)
-        setAccounts(accs)
+      if (user?.id) {
+        mutate(['transactions', user.id])
+        mutate(['accounts', user.id])
       }
     } catch (e) {
       console.error('updateTransaction failed:', e)

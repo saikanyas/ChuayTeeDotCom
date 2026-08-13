@@ -10,9 +10,21 @@ export default function OCRWarmup() {
     if (!attempted) {
       sessionStorage.setItem('ocr_warmup_attempted', 'true')
       const ocrUrl = process.env.NEXT_PUBLIC_OCR_SERVICE_URL || 'https://chuaytee-ocr.onrender.com'
-      fetch(`${ocrUrl}/health`, { method: 'GET', mode: 'cors' }).catch(() => {
-        // Non-blocking: warm-up failure never affects the UI
+      
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 3000)
+
+      fetch(`${ocrUrl}/health`, { 
+        method: 'GET', 
+        mode: 'cors',
+        signal: controller.signal 
       })
+        .catch(() => {
+          // Non-blocking: warm-up failure or timeout never affects the UI
+        })
+        .finally(() => {
+          clearTimeout(timeoutId)
+        })
     }
   }, [])
 

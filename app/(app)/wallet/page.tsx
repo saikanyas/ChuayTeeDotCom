@@ -7,13 +7,20 @@ import { useFinanceStore, Account } from '@/store/finance'
 import * as AccountsDB from '@/lib/supabase/accounts'
 import { createClient } from '@/lib/supabase/client'
 
+import { useAccounts } from '@/hooks/use-accounts'
+import { useSWRConfig } from 'swr'
+
 const PRESET_ICONS = ['💵', '🏦', '👛', '💳', '🐷', '💰', '💎', '🪙', '🎒', '📱', '🎁', '⭐']
 const MAX_FILE_SIZE_BYTES = 3 * 1024 * 1024 // 3MB Limit
 
 export default function WalletPage() {
   const { accounts, setAccounts, addAccount, updateAccountLocal, removeAccount, selectedAccount, setSelectedAccount } = useFinanceStore()
+  const [user, setUser] = useState<any>(null)
   const supabase = createClient()
+  const { mutate } = useSWRConfig()
   
+  const { accounts: swrAccs } = useAccounts(user?.id)
+
   // Modals state
   const [showAddModal, setShowAddModal] = useState(false)
   const [showDetailModal, setShowDetailModal] = useState(false)
@@ -33,7 +40,7 @@ export default function WalletPage() {
   const [editAccBalance, setEditAccBalance] = useState('')
   const [editAccType, setEditAccType] = useState<'cash' | 'bank' | 'wallet'>('cash')
   const [editSelectedIcon, setEditSelectedIcon] = useState('💵')
-  const [isEditingMode, setIsEditingMode] = useState(false) // Toggle cropper target (create vs edit)
+  const [isEditingMode, setIsEditingMode] = useState(false)
 
   // File Upload & Square Crop Modal State
   const iconFileInputRef = useRef<HTMLInputElement>(null)
@@ -44,20 +51,17 @@ export default function WalletPage() {
 
   const totalWalletBalance = accounts.reduce((sum, a) => sum + a.balance, 0)
 
-  // Load accounts from Supabase on mount
   useEffect(() => {
-    async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      try {
-        const accs = await AccountsDB.getAccounts(user.id)
-        setAccounts(accs)
-      } catch (e) {
-        console.error('Failed to load accounts:', e)
-      }
-    }
-    load()
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setUser(data.user)
+    })
   }, [])
+
+  useEffect(() => {
+    if (swrAccs && swrAccs.length >= 0) {
+      setAccounts(swrAccs)
+    }
+  }, [swrAccs, setAccounts])
 
   // Handle File Upload with 3MB Limit Enforcement
   const handleIconFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,6 +150,7 @@ export default function WalletPage() {
         color: '#FF3478',
       })
       addAccount(created)
+      if (user?.id) mutate(['accounts', user.id])
       setNewAccName('')
       setNewAccBalance('')
       setSelectedIcon('💵')
@@ -173,6 +178,7 @@ export default function WalletPage() {
         balance: bal,
         icon: editSelectedIcon,
       })
+      if (user?.id) mutate(['accounts', user.id])
     } catch (e) {
       console.error('updateAccount failed:', e)
     }
@@ -185,6 +191,7 @@ export default function WalletPage() {
     try {
       await AccountsDB.deleteAccount(id)
       removeAccount(id)
+      if (user?.id) mutate(['accounts', user.id])
     } catch (e) {
       console.error('deleteAccount failed:', e)
     }

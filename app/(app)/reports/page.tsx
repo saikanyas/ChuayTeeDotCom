@@ -1,14 +1,32 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useFinanceStore } from '@/store/finance'
+import { createClient } from '@/lib/supabase/client'
+import { useTransactions } from '@/hooks/use-transactions'
 import DynamicBarChart from '@/components/finance/charts/dynamic-bar-chart'
 import DynamicPieChart from '@/components/finance/charts/dynamic-pie-chart'
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
 
 export default function ReportsPage() {
-  const { transactions } = useFinanceStore()
+  const { transactions, setTransactions } = useFinanceStore()
+  const [user, setUser] = useState<any>(null)
   const [period, setPeriod] = useState<'week' | 'month' | '3month'>('month')
+
+  const supabase = createClient()
+  const { transactions: swrTxs } = useTransactions(user?.id)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setUser(data.user)
+    })
+  }, [])
+
+  useEffect(() => {
+    if (swrTxs && swrTxs.length >= 0) {
+      setTransactions(swrTxs)
+    }
+  }, [swrTxs, setTransactions])
 
   const totalExpense = transactions
     .filter(t => t.type === 'expense')

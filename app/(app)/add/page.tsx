@@ -18,9 +18,11 @@ import { compressImage } from '@/lib/utils'
 import * as TransactionsDB from '@/lib/supabase/transactions'
 import * as AccountsDB from '@/lib/supabase/accounts'
 import * as SlipsDB from '@/lib/supabase/slips'
+import { useSWRConfig } from 'swr'
 
 export default function AddPage() {
   const router = useRouter()
+  const { mutate } = useSWRConfig()
   const { 
     addTransaction, 
     accounts, 
@@ -132,7 +134,7 @@ export default function AddPage() {
     }
   }, [])
 
-  // Process Slip File helper
+  // Process Slip File  // Single-Pass Compression + OCR Processing
   const processScanFile = async (file: File) => {
     if (!file.type.startsWith('image/')) {
       alert('กรุณาเลือกไฟล์รูปภาพเท่านั้นครับ ⚠️')
@@ -143,11 +145,10 @@ export default function AddPage() {
       return
     }
 
-    setIsScanning(true)
-
     try {
-      // 1. Compress image ONCE (1600px max dimension, 0.8 quality) preserving aspect ratio
-      const compressedBlob = await compressImage(file, 1600, 0.8)
+      setIsScanning(true)
+      // Single-pass compression (1200px max dimension, EXIF stripping, JPEG 0.8 quality)
+      const compressedBlob = await compressImage(file, 1200, 0.8)
       setActiveSlipBlob(compressedBlob)
 
       const compressedFile = new File([compressedBlob], file.name || 'slip.jpg', { type: 'image/jpeg' })
@@ -271,7 +272,7 @@ export default function AddPage() {
           }
         }
 
-          try {
+        try {
           await TransactionsDB.createTransaction(user.id, {
             account_id: selectedAccount.id,
             type: tabType,
@@ -282,6 +283,10 @@ export default function AddPage() {
             source: scanResult ? 'slip_scan' : 'manual',
             slip_id: slipId,
           })
+
+          // Invalidate SWR transaction & account caches
+          mutate(['transactions', user.id])
+          mutate(['accounts', user.id])
         } catch (txErr: any) {
           if (slipId) {
             try {

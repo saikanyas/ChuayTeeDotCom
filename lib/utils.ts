@@ -80,7 +80,7 @@ export function formatFullThaiDateTime(dateStr?: string, timeStr?: string): stri
 
 export async function compressImage(
   file: File,
-  maxDimension = 1600,
+  maxDimension = 1200,
   quality = 0.8
 ): Promise<Blob> {
   if (!file.type.startsWith('image/')) {
