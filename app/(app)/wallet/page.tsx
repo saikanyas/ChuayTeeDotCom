@@ -121,7 +121,7 @@ export default function WalletPage() {
     }
   }
 
-  // Handle Save New Account — persists to Supabase & local state
+  // Handle Save New Account — persists to Supabase DB
   const handleCreateAccount = async () => {
     if (!newAccName.trim()) {
       setNameError('กรุณากรอกชื่อกระเป๋าเงินก่อนบันทึกนะครับ ⚠️')
@@ -130,47 +130,30 @@ export default function WalletPage() {
     setNameError(null)
 
     const bal = parseFloat(newAccBalance) || 0
-    const fallbackId = 'acc_' + Date.now()
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const created = await AccountsDB.createAccount(user.id, {
-          name: newAccName.trim(),
-          type: newAccType,
-          balance: bal,
-          icon: selectedIcon,
-          color: '#FF3478',
-        })
-        addAccount(created)
-      } else {
-        // Fallback for offline / guest state
-        addAccount({
-          id: fallbackId,
-          name: newAccName.trim(),
-          type: newAccType,
-          balance: bal,
-          icon: selectedIcon,
-          color: '#FF3478',
-        })
+      if (!user) {
+        setNameError('กรุณาเข้าสู่ระบบก่อนสร้างกระเป๋าเงินนะครับ ⚠️')
+        return
       }
-    } catch (e: any) {
-      console.error('createAccount failed:', e)
-      // Optimistic fallback on DB error so UI is never blocked
-      addAccount({
-        id: fallbackId,
+
+      const created = await AccountsDB.createAccount(user.id, {
         name: newAccName.trim(),
         type: newAccType,
         balance: bal,
         icon: selectedIcon,
         color: '#FF3478',
       })
+      addAccount(created)
+      setNewAccName('')
+      setNewAccBalance('')
+      setSelectedIcon('💵')
+      setShowAddModal(false)
+    } catch (e: any) {
+      console.error('createAccount failed:', e)
+      setNameError(e.message || 'ไม่สามารถสร้างกระเป๋าเงินบน Supabase ได้ กรุณาลองใหม่อีกครั้ง')
     }
-
-    setNewAccName('')
-    setNewAccBalance('')
-    setSelectedIcon('💵')
-    setShowAddModal(false)
   }
 
   // Handle Save Edit Account — persists to Supabase
