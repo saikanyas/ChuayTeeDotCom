@@ -31,7 +31,8 @@ export default function AddPage() {
     setPendingScanFile 
   } = useFinanceStore()
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
   const supabase = createClient()
 
   // Main State
@@ -205,8 +206,8 @@ export default function AddPage() {
 
   // Trigger File Input cross-platform (iOS / Android / Desktop)
   const triggerFileSelect = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click()
+    if (galleryInputRef.current) {
+      galleryInputRef.current.click()
     }
   }
 
@@ -350,10 +351,18 @@ export default function AddPage() {
         </div>
       )}
 
-      {/* Hidden File Input for Native Camera/Gallery Picker */}
+      {/* Hidden Inputs for Direct Mobile Camera Capture and Gallery Photo Picker */}
       <input
         type="file"
-        ref={fileInputRef}
+        ref={cameraInputRef}
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+      <input
+        type="file"
+        ref={galleryInputRef}
         accept="image/*"
         onChange={handleFileChange}
         className="hidden"
@@ -426,7 +435,7 @@ export default function AddPage() {
             <Loader2 size={32} className="text-[var(--color-primary)] animate-spin" />
             <p className="text-xs font-bold text-gray-800 font-body">กำลังสแกนอ่านข้อมูลใบเสร็จ...</p>
             <div className="bg-pink-50 border border-pink-100 rounded-2xl p-3 text-[11px] text-pink-700 leading-relaxed text-center font-body w-full">
-              ⚡ <b>กำลังสแกนอยู่...</b> หากเป็นการใช้งานครั้งแรกของวัน เซิร์ฟเวอร์อาจใช้เวลา 10–30 วินาทีในการเริ่มต้น (Render Cold Start) กรุณารอสักครู่นะครับ ✨
+              ⚡ <b>กำลังสแกนอยู่...</b> หากเป็นการใช้งานครั้งแรกของวัน เซิร์ฟเวอร์อาจใช้เวลา 10–30 วินาทีในการเริ่มต้น (Render Cold Start) กรุณารอสักครู่นะจ๊าา ✨
             </div>
           </div>
         ) : scanResult ? (
@@ -577,18 +586,20 @@ export default function AddPage() {
 
         {/* Bottom Calculator Panel (Unified Font Body) */}
         <div className="bg-white rounded-3xl p-4 shadow-lg border border-pink-100/60 space-y-3 font-body">
-          {/* Action Row: Camera, Scan Slip Button, Amount Display */}
+          {/* Action Row: Camera (Direct Camera Capture), Scan Slip Button (Gallery Picker), Amount Display */}
           <div className="flex items-center gap-2">
             <button
-              onClick={triggerFileSelect}
-              className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200"
+              onClick={() => cameraInputRef.current?.click()}
+              className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 active:scale-95 transition-transform"
+              title="ถ่ายรูปด้วยกล้องมือถือ"
             >
               <Camera size={18} />
             </button>
 
             <button
-              onClick={triggerFileSelect}
+              onClick={() => galleryInputRef.current?.click()}
               className="flex-1 py-2 px-3 rounded-xl border border-pink-200 bg-pink-50/50 text-xs font-bold text-[var(--color-primary)] flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 transition-transform font-body"
+              title="เลือกรูปสลิปจากแกลลอรี่"
             >
               <ImageIcon size={16} /> สแกนใบเสร็จ
             </button>

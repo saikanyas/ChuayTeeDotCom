@@ -100,7 +100,8 @@ export default function SettingsPage() {
         <LogOut size={18} className="mr-2" /> ออกจากระบบ
       </button>
 
-      <p className="text-center text-xs text-gray-400 mt-8">ช่วยที.com v1.0.0</p>
+      <p className="text-center text-xs text-gray-400 mt-8">ช่วยที.com v1.0.0 made with ૮₍ ˶ᵔ ᵕ ᵔ˶ ₎ა ❤️ </p>
+      
     </div>
   )
 }

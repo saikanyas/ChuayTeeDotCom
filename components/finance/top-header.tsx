@@ -2,7 +2,7 @@
 
 import { useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Camera } from 'lucide-react'
+import { Camera, Image as ImageIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useFinanceStore } from '@/store/finance'
 
@@ -15,15 +15,10 @@ interface HeaderProps {
 
 export default function TopHeader({ userName, avatarUrl, activeTab, onTabChange }: HeaderProps) {
   const router = useRouter()
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
   const { setPendingScanFile } = useFinanceStore()
   const tabs = ['ภาพรวม', 'เป้าหมาย', 'รายงาน']
-
-  const handleCameraClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click()
-    }
-  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -34,25 +29,35 @@ export default function TopHeader({ userName, avatarUrl, activeTab, onTabChange 
   }
 
   return (
-    <header className="pt-4 pb-2 px-4 bg-[#FFF0F5]/80 backdrop-blur-md sticky top-0 z-40 border-b border-pink-100/50">
-      {/* Hidden File Input for Native Camera/Gallery Picker */}
+    <header className="pt-4 pb-2 px-4 bg-[#FFF0F5]/80 backdrop-blur-md sticky top-0 z-40 border-b border-pink-100/50 font-body">
+      {/* Native Direct Mobile Camera Capture Input */}
       <input 
         type="file"
-        ref={fileInputRef}
+        ref={cameraInputRef}
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
+      {/* Gallery Photo Picker Input */}
+      <input 
+        type="file"
+        ref={galleryInputRef}
         accept="image/*"
         onChange={handleFileChange}
         className="hidden"
       />
 
       {/* User profile row */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 font-body">
         <motion.div 
           className="flex items-center gap-3"
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
         >
           <motion.div 
-            className="w-11 h-11 rounded-full overflow-hidden border-2 border-white shadow-xs bg-white flex items-center justify-center text-lg"
+            className="w-11 h-11 rounded-full overflow-hidden border-2 border-white shadow-xs bg-white flex items-center justify-center text-lg shrink-0"
             whileHover={{ scale: 1.05, rotate: 5 }}
             whileTap={{ scale: 0.9 }}
           >
@@ -67,14 +72,28 @@ export default function TopHeader({ userName, avatarUrl, activeTab, onTabChange 
           </div>
         </motion.div>
 
-        {/* Camera Button: Triggers Native File Select & Navigates to /add */}
-        <motion.button 
-          whileTap={{ scale: 0.85, rotate: -10 }}
-          onClick={handleCameraClick}
-          className="w-9 h-9 rounded-full bg-white border border-pink-100 flex items-center justify-center text-gray-700 shadow-2xs active:scale-90 transition-transform"
-        >
-          <Camera size={18} />
-        </motion.button>
+        {/* Action Buttons: Direct Camera Capture + Gallery Photo Picker */}
+        <div className="flex items-center gap-2">
+          {/* Direct Camera Launch Button */}
+          <motion.button 
+            whileTap={{ scale: 0.85, rotate: -10 }}
+            onClick={() => cameraInputRef.current?.click()}
+            className="w-9 h-9 rounded-full bg-white border border-pink-100 flex items-center justify-center text-gray-700 shadow-2xs active:scale-90 transition-transform"
+            title="ถ่ายรูปสลิปด้วยกล้องมือถือ"
+          >
+            <Camera size={18} />
+          </motion.button>
+
+          {/* Gallery Picker Button */}
+          <motion.button 
+            whileTap={{ scale: 0.85, rotate: 10 }}
+            onClick={() => galleryInputRef.current?.click()}
+            className="w-9 h-9 rounded-full bg-white border border-pink-200 text-[var(--color-primary)] flex items-center justify-center shadow-2xs active:scale-90 transition-transform"
+            title="เลือกรูปสลิปจากแกลลอรี่"
+          >
+            <ImageIcon size={18} />
+          </motion.button>
+        </div>
       </div>
 
       {/* Top 3 Menu Tabs (Centered & Soft Pink Theme) */}
