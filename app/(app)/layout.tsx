@@ -1,12 +1,8 @@
 import BottomNav from '@/components/ui/bottom-nav'
 import NoWalletGuard from '@/components/wallet/no-wallet-guard'
 import OCRWarmup from '@/components/ocr-warmup'
-import { createClient } from '@/lib/supabase/server'
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen w-full flex justify-center" style={{ backgroundColor: 'var(--color-bg)' }}>
       <div className="w-full max-w-[430px] bg-white shadow-xl min-h-screen relative flex flex-col">
