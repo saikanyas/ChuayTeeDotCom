@@ -25,21 +25,24 @@ export async function getTransactions(userId: string): Promise<Transaction[]> {
 
   if (error) throw error
 
-  return (data ?? []).map((t: any) => ({
-    id: t.id,
-    categoryName: t.categories?.name ?? (t.type === 'income' ? 'รายรับ' : 'ทั่วไป'),
-    categoryIcon: t.categories?.icon ?? '🧾',
-    categoryColor: t.categories?.color ?? (t.type === 'income' ? '#34C759' : '#FF3478'),
-    description: t.description ?? t.categories?.name ?? 'รายการ',
-    time: t.transaction_time ? String(t.transaction_time).slice(0, 5) : '00:00',
-    date: t.transaction_date ?? new Date().toISOString().split('T')[0],
-    source: (t.source ?? 'manual') as 'manual' | 'slip_scan',
-    amount: Number(t.amount),
-    type: t.type as 'income' | 'expense',
-    accountId: t.account_id ?? undefined,
-    accountName: t.accounts?.name ?? undefined,
-    slipUrl: t.slips?.storage_path ?? undefined,
-  }))
+  return (data ?? []).map((t: any) => {
+    const catName = t.categories?.name || t.description || (t.type === 'income' ? 'รายรับ' : 'ทั่วไป')
+    return {
+      id: t.id,
+      categoryName: catName,
+      categoryIcon: t.categories?.icon ?? catName,
+      categoryColor: t.categories?.color ?? (t.type === 'income' ? '#34C759' : '#FF3478'),
+      description: t.description ?? catName,
+      time: t.transaction_time ? String(t.transaction_time).slice(0, 5) : '00:00',
+      date: t.transaction_date ?? new Date().toISOString().split('T')[0],
+      source: (t.source ?? 'manual') as 'manual' | 'slip_scan',
+      amount: Number(t.amount),
+      type: t.type as 'income' | 'expense',
+      accountId: t.account_id ?? undefined,
+      accountName: t.accounts?.name ?? undefined,
+      slipUrl: t.slips?.storage_path ?? undefined,
+    }
+  })
 }
 
 export async function createTransaction(

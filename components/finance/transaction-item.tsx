@@ -1,6 +1,6 @@
 'use client'
 
-import { formatThaiCurrency, getLucideCategoryIcon, formatFullThaiDateTime } from '@/lib/utils'
+import { formatThaiCurrency, getLucideCategoryIcon, formatFullThaiDateTime, LUCIDE_CATEGORY_ICON_MAP } from '@/lib/utils'
 import { Camera } from 'lucide-react'
 
 interface Props {
@@ -31,7 +31,10 @@ export default function TransactionItem({
   onClick 
 }: Props) {
   const isIncome = type === 'income'
-  const IconComp = getLucideCategoryIcon(categoryName)
+  const catKey = (categoryName && categoryName !== 'ทั่วไป' && LUCIDE_CATEGORY_ICON_MAP[categoryName])
+    ? categoryName
+    : (description && LUCIDE_CATEGORY_ICON_MAP[description] ? description : (categoryName || description))
+  const IconComp = getLucideCategoryIcon(catKey)
   const displayDateTime = formatFullThaiDateTime(date, time)
 
   return (

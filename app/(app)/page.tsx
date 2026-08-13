@@ -15,6 +15,7 @@ import { ChevronDown, Menu, Plus, Target, Sparkles, X, AlertCircle, Trash2 } fro
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 
 import { useRouter } from 'next/navigation'
+import { LUCIDE_CATEGORY_ICON_MAP } from '@/lib/utils'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -71,13 +72,16 @@ export default function DashboardPage() {
   const categorySummaries = transactions
     .filter(t => t.type === displayType)
     .reduce((acc: any[], t) => {
-      const existing = acc.find(c => c.name === t.categoryName)
+      const catName = (t.categoryName && t.categoryName !== 'ทั่วไป' && LUCIDE_CATEGORY_ICON_MAP[t.categoryName])
+        ? t.categoryName
+        : (t.description && LUCIDE_CATEGORY_ICON_MAP[t.description] ? t.description : (t.categoryName || t.description || 'ทั่วไป'))
+      const existing = acc.find(c => c.name === catName)
       if (existing) {
         existing.amount += t.amount
       } else {
         acc.push({
-          name: t.categoryName,
-          icon: t.categoryIcon,
+          name: catName,
+          icon: catName,
           amount: t.amount,
           color: t.categoryColor
         })
