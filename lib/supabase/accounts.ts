@@ -15,7 +15,7 @@ export async function getAccounts(userId: string): Promise<Account[]> {
   return (data ?? []).map((r: any) => ({
     id: r.id,
     name: r.name,
-    type: (r.type ?? 'cash') as 'cash' | 'bank' | 'wallet',
+    type: (r.type === 'ewallet' ? 'wallet' : r.type ?? 'cash') as 'cash' | 'bank' | 'wallet',
     balance: Number(r.balance),
     icon: r.icon ?? '💵',
     color: r.color ?? '#FF3478',
@@ -26,8 +26,9 @@ export async function createAccount(
   userId: string,
   data: { name: string; type: string; balance: number; icon: string; color: string }
 ): Promise<Account> {
+  const dbType = data.type === 'wallet' ? 'ewallet' : data.type
   const { data: row, error } = await (supabase().from('accounts') as any)
-    .insert({ user_id: userId, ...data })
+    .insert({ user_id: userId, ...data, type: dbType })
     .select('id, name, type, balance, icon, color')
     .single()
 
@@ -35,7 +36,7 @@ export async function createAccount(
   return {
     id: row.id,
     name: row.name,
-    type: (row.type ?? 'cash') as 'cash' | 'bank' | 'wallet',
+    type: (row.type === 'ewallet' ? 'wallet' : row.type ?? 'cash') as 'cash' | 'bank' | 'wallet',
     balance: Number(row.balance),
     icon: row.icon ?? '💵',
     color: row.color ?? '#FF3478',
@@ -46,8 +47,12 @@ export async function updateAccount(
   id: string,
   data: Partial<{ name: string; type: string; balance: number; icon: string; color: string }>
 ): Promise<void> {
+  const updateData = { ...data }
+  if (updateData.type === 'wallet') {
+    updateData.type = 'ewallet'
+  }
   const { error } = await (supabase().from('accounts') as any)
-    .update(data)
+    .update(updateData)
     .eq('id', id)
   if (error) throw error
 }
