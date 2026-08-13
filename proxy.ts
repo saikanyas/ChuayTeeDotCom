@@ -13,6 +13,15 @@ export async function proxy(request: NextRequest) {
 
   if (isPublicAsset) return NextResponse.next({ request })
 
+  // 2. Forward OAuth ?code=... parameter to /auth/callback WITH ALL COOKIES PRESERVED
+  if (searchParams.has('code') && !pathname.startsWith('/auth/callback')) {
+    const url = new URL('/auth/callback', request.url)
+    url.searchParams.set('code', searchParams.get('code')!)
+    const redirectResponse = NextResponse.redirect(url)
+    request.cookies.getAll().forEach(c => redirectResponse.cookies.set(c.name, c.value, c))
+    return redirectResponse
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 
@@ -42,34 +51,23 @@ export async function proxy(request: NextRequest) {
       }
     )
 
-    // 2. Direct Middleware OAuth Code Exchange:
-    // If OAuth ?code=... param arrives at any non-callback URL, exchange it or pass to /auth/callback
-    if (searchParams.has('code')) {
-      if (!pathname.startsWith('/auth/callback')) {
-        const url = request.nextUrl.clone()
-        url.pathname = '/auth/callback'
-        const redirectResponse = NextResponse.redirect(url)
-        request.cookies.getAll().forEach(c => redirectResponse.cookies.set(c.name, c.value, c))
-        return redirectResponse
-      }
-    }
-
     // Refresh auth session & validate user token
     const { data: { user } } = await supabase.auth.getUser()
 
-    // Protected route: Redirect unauthenticated user to /login
+    // Protected route: Redirect unauthenticated user to /login cleanly
     if (!user && !isAuthRoute) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
+      const url = new URL('/login', request.url)
+      if (searchParams.has('error')) {
+        url.searchParams.set('error', searchParams.get('error')!)
+      }
       const redirectResponse = NextResponse.redirect(url)
       supabaseResponse.cookies.getAll().forEach(c => redirectResponse.cookies.set(c.name, c.value, c))
       return redirectResponse
     }
 
-    // Auth route: Redirect authenticated user to /
+    // Auth route: Redirect authenticated user cleanly to /
     if (user && (pathname === '/login' || pathname === '/register')) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/'
+      const url = new URL('/', request.url)
       const redirectResponse = NextResponse.redirect(url)
       supabaseResponse.cookies.getAll().forEach(c => redirectResponse.cookies.set(c.name, c.value, c))
       return redirectResponse
