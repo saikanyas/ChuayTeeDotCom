@@ -12,7 +12,8 @@ import * as TransactionsDB from '@/lib/supabase/transactions'
 import * as GoalsDB from '@/lib/supabase/goals'
 import * as AccountsDB from '@/lib/supabase/accounts'
 import { ChevronDown, Menu, Plus, Target, Sparkles, X, AlertCircle, Trash2 } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import DynamicBarChart from '@/components/finance/charts/dynamic-bar-chart'
+import DynamicPieChart from '@/components/finance/charts/dynamic-pie-chart'
 
 import { useRouter } from 'next/navigation'
 import { LUCIDE_CATEGORY_ICON_MAP } from '@/lib/utils'
@@ -353,17 +354,7 @@ export default function DashboardPage() {
                     ข้อมูลจริงตามรายรับ-รายจ่าย
                   </span>
                 </div>
-                <div className="h-48 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={barData}>
-                      <XAxis dataKey="name" stroke="#8E8E93" fontSize={11} tickLine={false} />
-                      <YAxis stroke="#8E8E93" fontSize={11} tickLine={false} axisLine={false} />
-                      <Tooltip formatter={(value) => [`฿${Number(value).toLocaleString()}`, '']} />
-                      <Bar dataKey="expense" fill="#FF3D30" radius={[4, 4, 0, 0]} name="รายจ่าย" />
-                      <Bar dataKey="income" fill="#34C759" radius={[4, 4, 0, 0]} name="รายรับ" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <DynamicBarChart data={barData.map(b => ({ day: b.name, expense: b.expense, income: b.income }))} />
               </div>
 
               {/* Category Pie Chart Card (REAL DATA) */}
@@ -371,18 +362,7 @@ export default function DashboardPage() {
                 <h3 className="font-bold text-sm text-gray-800 mb-4">สัดส่วนรายจ่ายตามหมวดหมู่จริง</h3>
                 {pieData.length > 0 ? (
                   <>
-                    <div className="h-48 w-full flex items-center justify-center">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={4}>
-                            {pieData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(val) => [`฿${Number(val).toLocaleString()}`, '']} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <DynamicPieChart data={pieData} />
 
                     {/* Legend */}
                     <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-gray-100 font-body">

@@ -56,6 +56,7 @@ export async function createTransaction(
     transaction_time: string
     source: 'manual' | 'slip_scan'
     category_id?: string
+    slip_id?: string
   }
 ): Promise<string> {
   const { data: row, error } = await (supabase().from('transactions') as any)

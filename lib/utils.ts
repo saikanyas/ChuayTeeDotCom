@@ -77,3 +77,65 @@ export function formatFullThaiDateTime(dateStr?: string, timeStr?: string): stri
   const cleanTime = timeStr ? timeStr.slice(0, 5) : ''
   return cleanTime ? `${formattedDate} ${cleanTime} น.` : formattedDate
 }
+
+export async function compressImage(
+  file: File,
+  maxDimension = 1600,
+  quality = 0.8
+): Promise<Blob> {
+  if (!file.type.startsWith('image/')) {
+    throw new Error('ชนิดไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์รูปภาพเท่านั้นครับ')
+  }
+
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      let { width, height } = img
+
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = Math.round((height * maxDimension) / width)
+          width = maxDimension
+        } else {
+          width = Math.round((width * maxDimension) / height)
+          height = maxDimension
+        }
+      }
+
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        reject(new Error('ไม่สามารถบีบอัดรูปภาพได้'))
+        return
+      }
+
+      ctx.fillStyle = '#FFFFFF'
+      ctx.fillRect(0, 0, width, height)
+      ctx.drawImage(img, 0, 0, width, height)
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob)
+          } else {
+            reject(new Error('บีบอัดรูปภาพล้มเหลว'))
+          }
+        },
+        'image/jpeg',
+        quality
+      )
+    }
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('อ่านไฟล์รูปภาพไม่สำเร็จ'))
+    }
+
+    img.src = url
+  })
+}

@@ -5,21 +5,17 @@ import { Download, CheckCircle2, Share } from 'lucide-react'
 
 export default function PWAInstallBanner() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
-  const [isInstalled, setIsInstalled] = useState(false)
-  const [isIOS, setIsIOS] = useState(false)
+  const [isInstalled, setIsInstalled] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return !!(window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone)
+  })
+  const [isIOS, setIsIOS] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase())
+  })
 
   useEffect(() => {
-    // Check if already in standalone mode
-    if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone) {
-      setIsInstalled(true)
-      return
-    }
-
-    // Detect iOS
-    const userAgent = window.navigator.userAgent.toLowerCase()
-    if (/iphone|ipad|ipod/.test(userAgent)) {
-      setIsIOS(true)
-    }
+    if (isInstalled) return
 
     const handleBeforeInstall = (e: Event) => {
       e.preventDefault()
@@ -28,7 +24,7 @@ export default function PWAInstallBanner() {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall)
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall)
-  }, [])
+  }, [isInstalled])
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return

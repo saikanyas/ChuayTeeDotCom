@@ -8,10 +8,11 @@ import { createClient } from '@/lib/supabase/client'
 import * as TransactionsDB from '@/lib/supabase/transactions'
 import * as AccountsDB from '@/lib/supabase/accounts'
 import { 
-  Search, X, Camera, Calendar, Wallet, Trash2, Tag, FileText, Edit3, Check, ChevronDown,
+  Search, X, Camera, Calendar, Wallet, Trash2, Tag, FileText, Edit3, Check, ChevronDown, Loader2,
   Utensils, Coffee, Wine, Bus, Car, ShoppingBag, Fuel, Tv, Film, Home, Smartphone, 
   PiggyBank, HeartPulse, GraduationCap, HeartHandshake, Briefcase, BadgeDollarSign, Gift
 } from 'lucide-react'
+import * as SlipsDB from '@/lib/supabase/slips'
 import { formatThaiCurrency, getLucideCategoryIcon } from '@/lib/utils'
 
 const ALL_CATEGORIES = [
@@ -92,6 +93,23 @@ export default function TransactionsPage() {
     }
     setSelectedTx(null)
   }
+
+  const [signedSlipUrl, setSignedSlipUrl] = useState<string | null>(null)
+  const [isLoadingSignedUrl, setIsLoadingSignedUrl] = useState(false)
+
+  useEffect(() => {
+    async function loadSignedUrl() {
+      if (!selectedTx?.slipUrl) {
+        setSignedSlipUrl(null)
+        return
+      }
+      setIsLoadingSignedUrl(true)
+      const url = await SlipsDB.getSignedSlipUrl(selectedTx.slipUrl, 3600)
+      setSignedSlipUrl(url)
+      setIsLoadingSignedUrl(false)
+    }
+    loadSignedUrl()
+  }, [selectedTx])
 
   // Populate Edit Form
   const openEditModal = () => {
@@ -248,25 +266,37 @@ export default function TransactionsPage() {
                   </div>
 
                   {/* Attached Slip Image Preview (Click to open full lightbox modal) */}
-                  {selectedTx.source === 'slip_scan' && (
+                  {(selectedTx.slipUrl || selectedTx.source === 'slip_scan') && (
                     <div className="bg-pink-50/60 rounded-2xl p-3 border border-pink-100 space-y-2">
                       <div className="flex items-center justify-between text-xs font-bold text-gray-700">
                         <span className="flex items-center gap-1.5">
                           <Camera size={14} className="text-[var(--color-primary)]" /> รูปภาพสลิปใบเสร็จที่แนบไว้
                         </span>
-                        <span className="text-[10px] text-pink-600 font-bold bg-white px-2 py-0.5 rounded-full border border-pink-200">
-                          จิ้มเพื่อดูรูปเต็ม 🔍
-                        </span>
+                        {signedSlipUrl && (
+                          <span className="text-[10px] text-pink-600 font-bold bg-white px-2 py-0.5 rounded-full border border-pink-200">
+                            จิ้มเพื่อดูรูปเต็ม 🔍
+                          </span>
+                        )}
                       </div>
                       
-                      <motion.img 
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => setShowFullSlipModal(true)}
-                        src={selectedTx.slipUrl || 'https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?w=400&auto=format&fit=crop&q=80'} 
-                        alt="Receipt Slip" 
-                        className="w-full max-h-56 object-contain rounded-xl border border-pink-200 bg-white/80 p-1 shadow-2xs cursor-pointer"
-                      />
+                      {isLoadingSignedUrl ? (
+                        <div className="w-full h-36 rounded-xl border border-pink-200 bg-white/80 flex items-center justify-center text-xs text-gray-400 font-bold animate-pulse">
+                          <Loader2 size={18} className="animate-spin mr-2 text-pink-500" /> กำลังโหลดรูปสลิปปลอดภัย...
+                        </div>
+                      ) : signedSlipUrl ? (
+                        <motion.img 
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => setShowFullSlipModal(true)}
+                          src={signedSlipUrl} 
+                          alt="Receipt Slip" 
+                          className="w-full max-h-56 object-contain rounded-xl border border-pink-200 bg-white/80 p-1 shadow-2xs cursor-pointer"
+                        />
+                      ) : (
+                        <div className="w-full p-4 rounded-xl border border-pink-200 bg-white/80 text-center text-xs text-gray-400 font-bold">
+                          ไม่พบไฟล์รูปภาพสลิป หรือไฟล์ถูกลบตามโควต้า 30 สลิปย้อนหลัง
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -347,7 +377,7 @@ export default function TransactionsPage() {
               </button>
 
               <img 
-                src={selectedTx.slipUrl || 'https://images.unsplash.com/photo-1554415707-6e8cfc93fe23?w=800&auto=format&fit=crop&q=80'}
+                src={signedSlipUrl || ''}
                 alt="Full Slip Preview"
                 className="w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl border border-white/20"
               />

@@ -14,8 +14,10 @@ import { useFinanceStore } from '@/store/finance'
 import { createClient } from '@/lib/supabase/client'
 import { processRealSlipOCR } from '@/lib/real-ocr'
 import { scanSlip } from '@/lib/ocr-client'
+import { compressImage } from '@/lib/utils'
 import * as TransactionsDB from '@/lib/supabase/transactions'
 import * as AccountsDB from '@/lib/supabase/accounts'
+import * as SlipsDB from '@/lib/supabase/slips'
 
 export default function AddPage() {
   const router = useRouter()
@@ -46,6 +48,8 @@ export default function AddPage() {
     dateText: string
     usedSlipDate: boolean
   } | null>(null)
+  const [activeSlipBlob, setActiveSlipBlob] = useState<Blob | null>(null)
+  const [ocrDataResult, setOcrDataResult] = useState<any>(null)
 
   // Current Bangkok Local Date String
   const [dateStr, setDateStr] = useState('')
@@ -129,21 +133,40 @@ export default function AddPage() {
 
   // Process Slip File helper
   const processScanFile = async (file: File) => {
-    const previewUrl = URL.createObjectURL(file)
+    if (!file.type.startsWith('image/')) {
+      alert('กรุณาเลือกไฟล์รูปภาพเท่านั้นครับ ⚠️')
+      return
+    }
+    if (file.size > 25 * 1024 * 1024) {
+      alert('ไฟล์รูปภาพมีขนาดใหญ่เกินไป (สูงสุด 25MB) ⚠️')
+      return
+    }
+
     setIsScanning(true)
 
     try {
+      // 1. Compress image ONCE (1600px max dimension, 0.8 quality) preserving aspect ratio
+      const compressedBlob = await compressImage(file, 1600, 0.8)
+      setActiveSlipBlob(compressedBlob)
+
+      const compressedFile = new File([compressedBlob], file.name || 'slip.jpg', { type: 'image/jpeg' })
+      const previewUrl = URL.createObjectURL(compressedBlob)
+
       let extractedAmt = 39
       let extractedDateStr = '12 ส.ค. 69 20:44'
+      let ocrResData: any = null
 
       try {
-        const pythonRes = await scanSlip(file)
+        const pythonRes = await scanSlip(compressedFile)
+        ocrResData = pythonRes
         if (pythonRes.amount) extractedAmt = pythonRes.amount
       } catch {
-        const localRes = await processRealSlipOCR(file)
+        const localRes = await processRealSlipOCR(compressedFile)
+        ocrResData = localRes
         if (localRes.amount) extractedAmt = localRes.amount
       }
 
+      setOcrDataResult(ocrResData)
       setScanResult({
         imagePreviewUrl: previewUrl,
         amount: extractedAmt,
@@ -151,14 +174,9 @@ export default function AddPage() {
         usedSlipDate: true,
       })
       setAmount(extractedAmt.toString())
-    } catch {
-      setScanResult({
-        imagePreviewUrl: previewUrl,
-        amount: 39,
-        dateText: '12 ส.ค. 69 20:44',
-        usedSlipDate: true,
-      })
-      setAmount('39')
+    } catch (err: any) {
+      console.error('processScanFile error:', err)
+      alert(err.message || 'อ่านไฟล์สลิปไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
     } finally {
       setIsScanning(false)
     }
@@ -217,7 +235,7 @@ export default function AddPage() {
     const newTx = {
       id: tempId,
       categoryName: selectedCategory.name,
-      categoryIcon: '\ud83e\uddf3',
+      categoryIcon: selectedCategory.name,
       categoryColor: selectedCategory.color,
       description: transactionTitle || selectedCategory.name,
       time: thaiTimeStr,
@@ -233,21 +251,64 @@ export default function AddPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        await TransactionsDB.createTransaction(user.id, {
-          account_id: selectedAccount.id,
-          type: tabType,
-          amount: numAmount,
-          description: transactionTitle || selectedCategory.name,
-          transaction_date: thaiDateStr,
-          transaction_time: thaiTimeStr,
-          source: scanResult ? 'slip_scan' : 'manual',
-        })
+        let slipId: string | undefined = undefined
+
+        // If a slip photo was attached/scanned, upload to private Storage & create slip record
+        if (activeSlipBlob) {
+          try {
+            const { storagePath } = await SlipsDB.uploadSlip(user.id, activeSlipBlob)
+            slipId = await SlipsDB.createSlipRecord(user.id, storagePath, {
+              detected_bank: ocrDataResult?.bank_name,
+              extracted_amount: ocrDataResult?.amount,
+              raw_text: ocrDataResult?.raw_text,
+              confidence: ocrDataResult?.confidence,
+            })
+          } catch (slipErr: any) {
+            console.error('Slip upload / DB record creation failed:', slipErr)
+            alert('ไม่สามารถอัปโหลดสลิปได้: ' + (slipErr.message || 'กรุณาลองใหม่อีกครั้ง'))
+            return
+          }
+        }
+
+          try {
+          await TransactionsDB.createTransaction(user.id, {
+            account_id: selectedAccount.id,
+            type: tabType,
+            amount: numAmount,
+            description: transactionTitle || selectedCategory.name,
+            transaction_date: thaiDateStr,
+            transaction_time: thaiTimeStr,
+            source: scanResult ? 'slip_scan' : 'manual',
+            slip_id: slipId,
+          })
+        } catch (txErr: any) {
+          if (slipId) {
+            try {
+              const { data: slipRow } = await (supabase.from('slips') as any).select('storage_path').eq('id', slipId).single()
+              if (slipRow?.storage_path) {
+                await SlipsDB.deleteStorageFile(slipRow.storage_path)
+              }
+              await (supabase.from('slips') as any).delete().eq('id', slipId)
+            } catch (rollbackErr) {
+              console.error('Rollback slip record failed:', rollbackErr)
+            }
+          }
+          throw txErr
+        }
+
+        // Atomically enforce 30-slip FIFO cap server-side ONLY after successful transaction creation
+        if (slipId) {
+          await SlipsDB.enforceSlipCap(30)
+        }
+
         // Re-fetch accounts so balance reflects DB trigger
         const updatedAccounts = await AccountsDB.getAccounts(user.id)
         setAccounts(updatedAccounts)
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('createTransaction failed:', e)
+      alert('บันทึกรายการไม่สำเร็จ: ' + (e.message || 'กรุณาลองใหม่อีกครั้ง'))
+      return
     }
 
     router.push('/')
