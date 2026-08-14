@@ -13,6 +13,17 @@ export async function GET(request: NextRequest) {
   if (code) {
     try {
       const cookieStore = await cookies()
+      const allCookies = cookieStore.getAll()
+      
+      console.log('[Auth Callback Log]', {
+        timestamp: new Date().toISOString(),
+        url: request.url,
+        codePrefix: code.substring(0, 8) + '...',
+        cookieCount: allCookies.length,
+        cookieNames: allCookies.map(c => c.name),
+        hasCodeVerifier: allCookies.some(c => c.name.includes('code-verifier')),
+      })
+
       const forwardedHost = request.headers.get('x-forwarded-host')
       const host = forwardedHost || request.headers.get('host')
       const protocol = request.headers.get('x-forwarded-proto') || 'https'
@@ -41,12 +52,23 @@ export async function GET(request: NextRequest) {
 
       const { error } = await supabase.auth.exchangeCodeForSession(code)
       if (!error) {
+        console.log('[Auth Callback Success] Session exchanged successfully for code:', code.substring(0, 8))
         return redirectResponse
       } else {
-        console.error('OAuth exchangeCodeForSession error:', error)
+        console.error('[Auth Callback Error Details]', {
+          code: (error as any)?.code,
+          status: (error as any)?.status,
+          name: error?.name,
+          message: error?.message,
+          fullError: JSON.stringify(error, Object.getOwnPropertyNames(error)),
+        })
       }
-    } catch (err) {
-      console.error('OAuth callback exception:', err)
+    } catch (err: any) {
+      console.error('[Auth Callback Exception Details]', {
+        message: err?.message,
+        stack: err?.stack,
+        fullException: JSON.stringify(err, Object.getOwnPropertyNames(err)),
+      })
     }
   }
 

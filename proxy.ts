@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl
+  const { pathname, searchParams } = request.nextUrl
 
   // 1. Skip static assets, PWA files, icons, and API routes
   const isAuthRoute   = pathname.startsWith('/login') || pathname.startsWith('/auth') || pathname.startsWith('/register')
@@ -12,6 +12,18 @@ export async function proxy(request: NextRequest) {
                         pathname.includes('.')
 
   if (isPublicAsset) return NextResponse.next({ request })
+
+  if (pathname.startsWith('/auth/callback') || searchParams.has('code')) {
+    console.log('[Proxy Intercept OAuth]', {
+      timestamp: new Date().toISOString(),
+      pathname,
+      hasCode: searchParams.has('code'),
+      codePrefix: searchParams.get('code')?.substring(0, 8),
+      host: request.headers.get('host'),
+      referer: request.headers.get('referer'),
+      userAgent: request.headers.get('user-agent'),
+    })
+  }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ccqhglbmdqtnacgobidw.supabase.co'
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || ''
