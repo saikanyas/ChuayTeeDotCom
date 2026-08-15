@@ -35,12 +35,13 @@ export async function getProfile(userId: string): Promise<ProfileData | null> {
 
 /**
  * Upload & update avatar for a user (strictly 1 file per account).
- * Returns the final avatar URL (storage public URL or compressed data URL fallback).
- * If anything fails, it throws an error so the caller can safely keep the previous avatar fallback.
+ * CRITICAL FIX: NEVER save base64 DataURLs into Supabase Auth user_metadata,
+ * as Auth user_metadata is serialized directly into the JWT cookie and causes
+ * Vercel HTTP 494 REQUEST_HEADER_TOO_LARGE errors!
  */
 export async function uploadUserAvatar(userId: string, imageBlob: Blob): Promise<string> {
   const storagePath = `${userId}/avatar.jpg`
-  let uploadedUrl: string | null = null
+  let storagePublicUrl: string | null = null
 
   // 1. Try uploading to 'avatars' storage bucket with upsert: true (replaces existing single avatar)
   try {
@@ -55,46 +56,56 @@ export async function uploadUserAvatar(userId: string, imageBlob: Blob): Promise
     if (!uploadErr) {
       const { data: publicUrlData } = supabase().storage.from('avatars').getPublicUrl(storagePath)
       if (publicUrlData?.publicUrl) {
-        uploadedUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`
+        storagePublicUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`
       }
+    } else {
+      console.warn('Storage upload notice:', uploadErr.message)
     }
   } catch (storageErr) {
-    console.warn('Storage avatars upload warning (falling back to DataURL/direct):', storageErr)
+    console.warn('Storage avatars upload warning:', storageErr)
   }
 
-  // 2. Fallback to compact DataURL if storage bucket is not available or blocked by policy
-  if (!uploadedUrl) {
-    uploadedUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = () => reject(new Error('ไม่สามารถแปลงรูปภาพสำรองได้'))
-      reader.readAsDataURL(imageBlob)
+  // 2. If storage upload succeeded, we have a lightweight HTTP URL (~80 bytes)
+  if (storagePublicUrl) {
+    // Safe to update Supabase Auth user_metadata with short HTTP URL
+    await supabase().auth.updateUser({
+      data: {
+        avatar_url: storagePublicUrl,
+        picture: storagePublicUrl,
+      },
     })
+
+    // Update Supabase profiles table (strictly 1 row per user)
+    await (supabase().from('profiles') as any).upsert({
+      id: userId,
+      avatar_url: storagePublicUrl,
+      default_currency: 'THB',
+    })
+
+    return storagePublicUrl
   }
 
-  // 3. Update Supabase Auth user_metadata
-  const { error: authErr } = await supabase().auth.updateUser({
-    data: {
-      avatar_url: uploadedUrl,
-      picture: uploadedUrl,
-    },
+  // 3. Fallback: If storage bucket isn't available, save compact DataURL ONLY in PostgreSQL profiles table!
+  // DO NOT pass DataURL to supabase.auth.updateUser to avoid cookie header explosion!
+  const base64DataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(new Error('ไม่สามารถแปลงรูปภาพสำรองได้'))
+    reader.readAsDataURL(imageBlob)
   })
-  if (authErr) {
-    console.error('updateUser auth metadata failed:', authErr)
-    throw new Error('บันทึกข้อมูลภาพโปรไฟล์ไม่สำเร็จ: ' + authErr.message)
-  }
 
-  // 4. Update Supabase profiles table (strictly 1 row per user)
+  // Save base64 ONLY in the PostgreSQL profiles table
   const { error: profileErr } = await (supabase().from('profiles') as any).upsert({
     id: userId,
-    avatar_url: uploadedUrl,
+    avatar_url: base64DataUrl,
     default_currency: 'THB',
   })
   if (profileErr) {
     console.error('upsert profile table failed:', profileErr)
+    throw new Error('บันทึกรูปโปรไฟล์ไม่สำเร็จ: ' + profileErr.message)
   }
 
-  return uploadedUrl
+  return base64DataUrl
 }
 
 /**
