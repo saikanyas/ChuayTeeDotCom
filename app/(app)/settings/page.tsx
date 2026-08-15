@@ -52,7 +52,7 @@ export default function SettingsPage() {
                       'ผู้ใช้'
 
   return (
-    <div className="min-h-screen p-4 bg-[#F9F8FA] pb-28 font-body">
+    <div className="bg-[#F9F8FA] p-4 pb-4 font-body">
       <h1 className="text-xl font-display font-bold mb-6 mt-2 text-gray-800">ตั้งค่าและเมนู</h1>
       
       {/* User profile card (Clickable to edit profile) */}

@@ -223,7 +223,7 @@ export default function WalletPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFF5F8] p-4 pb-28 font-body">
+    <div className="bg-[#FFF5F8] p-4 pb-4 font-body">
       {/* Hidden File Input for Custom Wallet Icon */}
       <input
         type="file"

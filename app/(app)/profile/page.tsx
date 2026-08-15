@@ -101,7 +101,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F9F8FA] p-4 pb-28 font-body text-gray-800">
+    <div className="bg-[#F9F8FA] p-4 pb-4 font-body text-gray-800">
       {/* Top Navigation Header */}
       <div className="flex items-center justify-between mb-6 mt-2">
         <button

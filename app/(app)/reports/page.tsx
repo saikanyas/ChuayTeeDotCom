@@ -81,7 +81,7 @@ export default function ReportsPage() {
   }))
 
   return (
-    <div className="min-h-screen bg-[#F9F8FA] p-4 pb-28 font-body">
+    <div className="bg-[#F9F8FA] p-4 pb-4 font-body">
       <h1 className="text-xl font-display font-bold text-gray-800 mb-4 mt-2">รายงานสรุปการเงินจริง</h1>
 
       {/* Period Filter Tabs */}

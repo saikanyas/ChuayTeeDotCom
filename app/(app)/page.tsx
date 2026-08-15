@@ -199,7 +199,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F9F8FA] pb-24 font-body">
+    <div className="bg-[#F9F8FA] pb-4 font-body">
       {/* Centered Top Header */}
       <TopHeader 
         userName={user?.user_metadata?.full_name || user?.user_metadata?.name || user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Yotsakon Saikanya'}

@@ -171,7 +171,7 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFF5F8] p-4 pb-28 font-body text-gray-800">
+    <div className="bg-[#FFF5F8] p-4 pb-4 font-body text-gray-800">
       <h1 className="text-xl font-display font-bold text-gray-800 mb-4 mt-2">ประวัติธุรกรรม</h1>
 
       {/* Search & Filter bar */}
