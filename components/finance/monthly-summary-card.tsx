@@ -107,7 +107,7 @@ export default function MonthlySummaryCard({
   }
 
   return (
-    <div className="bg-white rounded-3xl p-5 shadow-xs border border-gray-100/80 mb-24 font-body relative">
+    <div className="bg-white rounded-3xl p-5 shadow-xs border border-gray-100/80 mb-3 font-body relative">
       {/* Date filter row */}
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
         <div className="flex items-center gap-1.5 cursor-pointer">
