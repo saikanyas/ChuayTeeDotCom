@@ -44,6 +44,9 @@ export default function DashboardPage() {
   const { accounts: swrAccs } = useAccounts(user?.id)
   const { goals: swrGoals } = useGoals(user?.id)
 
+  const [profileAvatar, setProfileAvatar] = useState<string | null>(null)
+  const [profileName, setProfileName] = useState<string | null>(null)
+
   useEffect(() => {
     async function loadUser() {
       const { data: { user: u } } = await supabase.auth.getUser()
@@ -51,6 +54,18 @@ export default function DashboardPage() {
       if (u) {
         const savedTarget = localStorage.getItem(`daily_target_${u.id}`)
         setDailyTarget(savedTarget ? Number(savedTarget) : 0)
+        try {
+          const { data: prof } = await (supabase.from('profiles') as any)
+            .select('display_name, avatar_url')
+            .eq('id', u.id)
+            .maybeSingle()
+          if (prof) {
+            if (prof.avatar_url) setProfileAvatar(prof.avatar_url)
+            if (prof.display_name) setProfileName(prof.display_name)
+          }
+        } catch {
+          // ignore error
+        }
       }
     }
     loadUser()
@@ -202,8 +217,8 @@ export default function DashboardPage() {
     <div className="bg-[#F9F8FA] pb-4 font-body">
       {/* Centered Top Header */}
       <TopHeader 
-        userName={user?.user_metadata?.full_name || user?.user_metadata?.name || user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Yotsakon Saikanya'}
-        avatarUrl={user?.user_metadata?.avatar_url || user?.user_metadata?.picture || user?.identities?.[0]?.identity_data?.avatar_url || user?.identities?.[0]?.identity_data?.picture}
+        userName={profileName || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'ผู้ใช้งาน'}
+        avatarUrl={profileAvatar || user?.user_metadata?.avatar_url || user?.user_metadata?.picture || user?.identities?.[0]?.identity_data?.avatar_url || user?.identities?.[0]?.identity_data?.picture}
         activeTab={activeHeaderTab}
         onTabChange={setActiveHeaderTab}
       />

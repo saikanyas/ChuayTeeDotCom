@@ -1,45 +1,58 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/store/finance'
+import { uploadUserAvatar, updateProfileDisplayName, getProfile } from '@/lib/supabase/profiles'
+import { compressAvatarImage } from '@/lib/utils'
 import { 
   ArrowLeft, User, Mail, DollarSign, Globe, Calendar, 
-  Check, Loader2, ShieldCheck, LogOut, Save
+  Check, Loader2, ShieldCheck, LogOut, Save, Camera, AlertCircle
 } from 'lucide-react'
 
 export default function ProfilePage() {
   const router = useRouter()
   const supabase = createClient()
+  const avatarFileInputRef = useRef<HTMLInputElement>(null)
   
   const [user, setUser] = useState<any>(null)
   const [displayName, setDisplayName] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [showSuccessToast, setShowSuccessToast] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('บันทึกข้อมูลโปรไฟล์เรียบร้อยแล้วครับ ✨')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    async function loadUser() {
+    async function loadUserAndProfile() {
       const { data: { user: u } } = await supabase.auth.getUser()
       if (u) {
         setUser(u)
-        const name = u.user_metadata?.full_name || 
+        
+        // 1. Check profiles table first for custom avatar, fallback to Google metadata
+        const profile = await getProfile(u.id)
+        const name = profile?.display_name || 
+                     u.user_metadata?.full_name || 
                      u.user_metadata?.name || 
                      u.user_metadata?.display_name || 
                      u.email?.split('@')[0] || 
                      ''
         setDisplayName(name)
+
+        const initialAvatar = profile?.avatar_url || 
+                              u.user_metadata?.avatar_url || 
+                              u.user_metadata?.picture || 
+                              u.identities?.[0]?.identity_data?.avatar_url || 
+                              u.identities?.[0]?.identity_data?.picture || 
+                              null
+        setAvatarUrl(initialAvatar)
       }
     }
-    loadUser()
+    loadUserAndProfile()
   }, [])
-
-  const avatarUrl = user?.user_metadata?.avatar_url || 
-                    user?.user_metadata?.picture || 
-                    user?.identities?.[0]?.identity_data?.avatar_url || 
-                    user?.identities?.[0]?.identity_data?.picture
 
   const email = user?.email || 'ไม่มีอีเมล'
   const isGoogleProvider = user?.app_metadata?.provider === 'google' || 
@@ -54,34 +67,72 @@ export default function ProfilePage() {
       })
     : 'ไม่ทราบวันที่'
 
+  // Handle Avatar Image File Upload with Fallback Protection
+  const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    const file = files[0]
+
+    // Requirement: File type check
+    if (!file.type.startsWith('image/')) {
+      setErrorMessage('กรุณาเลือกไฟล์รูปภาพเท่านั้นครับ (JPEG, PNG, WebP) ⚠️')
+      if (e.target) e.target.value = ''
+      return
+    }
+
+    // Size limit check (max 5MB raw)
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMessage('ขนาดไฟล์รูปภาพเกิน 5MB กรุณาเลือกรูปขนาดเล็กลงนะครับ ⚠️')
+      if (e.target) e.target.value = ''
+      return
+    }
+
+    if (!user?.id) {
+      setErrorMessage('กรุณาเข้าสู่ระบบก่อนเปลี่ยนรูปโปรไฟล์นะครับ ⚠️')
+      return
+    }
+
+    // Fallback Anchor: Preserve current avatar in case upload fails
+    const fallbackAvatar = avatarUrl
+    setIsUploadingAvatar(true)
+    setErrorMessage(null)
+
+    try {
+      // 1. Single-pass 1:1 Square Compression (256x256px JPEG, max ~25KB)
+      const compressedBlob = await compressAvatarImage(file, 256, 0.85)
+
+      // 2. Upload strictly 1 file per account (avatars/${userId}/avatar.jpg) & update Supabase DB
+      const newAvatarUrl = await uploadUserAvatar(user.id, compressedBlob)
+
+      // 3. Update local state with new avatar
+      setAvatarUrl(newAvatarUrl)
+      setSuccessMessage('เปลี่ยนรูปโปรไฟล์สำเร็จแล้ว ✨')
+      setShowSuccessToast(true)
+      setTimeout(() => setShowSuccessToast(false), 3000)
+    } catch (err: any) {
+      console.error('Avatar upload failed:', err)
+      // Fallback: Revert to previous avatar so it's not lost
+      setAvatarUrl(fallbackAvatar)
+      setErrorMessage(`อัปโหลดรูปภาพไม่สำเร็จ รูปโปรไฟล์เดิมยังคงอยู่: ${err?.message || 'ข้อผิดพลาดเครือข่าย'}`)
+    } finally {
+      setIsUploadingAvatar(false)
+      if (e.target) e.target.value = ''
+    }
+  }
+
   const handleSave = async () => {
     if (!displayName.trim()) {
       setErrorMessage('กรุณากรอกชื่อที่ต้องการแสดงนะครับ ⚠️')
       return
     }
+    if (!user?.id) return
+
     setErrorMessage(null)
     setIsSaving(true)
 
     try {
-      // 1. Update Supabase Auth user metadata
-      const { error: authErr } = await supabase.auth.updateUser({
-        data: {
-          full_name: displayName.trim(),
-          display_name: displayName.trim(),
-        }
-      })
-      if (authErr) throw authErr
-
-      // 2. Upsert Supabase profiles table row
-      if (user?.id) {
-        await (supabase.from('profiles') as any).upsert({
-          id: user.id,
-          display_name: displayName.trim(),
-          avatar_url: avatarUrl || null,
-          default_currency: 'THB',
-        })
-      }
-
+      await updateProfileDisplayName(user.id, displayName)
+      setSuccessMessage('บันทึกข้อมูลโปรไฟล์เรียบร้อยแล้วครับ ✨')
       setShowSuccessToast(true)
       setTimeout(() => setShowSuccessToast(false), 3000)
     } catch (err: any) {
@@ -102,6 +153,15 @@ export default function ProfilePage() {
 
   return (
     <div className="bg-[#F9F8FA] p-4 pb-4 font-body text-gray-800">
+      {/* Hidden File Input for Avatar Image Selection */}
+      <input
+        type="file"
+        ref={avatarFileInputRef}
+        accept="image/*"
+        onChange={handleAvatarFileChange}
+        className="hidden"
+      />
+
       {/* Top Navigation Header */}
       <div className="flex items-center justify-between mb-6 mt-2">
         <button
@@ -126,27 +186,58 @@ export default function ProfilePage() {
             className="mb-4 bg-green-50 border border-green-200 rounded-2xl p-3.5 flex items-center gap-2 text-xs font-bold text-green-700 shadow-2xs font-body"
           >
             <Check size={16} className="text-green-600 shrink-0" />
-            <span>บันทึกข้อมูลโปรไฟล์เรียบร้อยแล้วครับ ✨</span>
+            <span>{successMessage}</span>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Error Alert Banner */}
       {errorMessage && (
-        <div className="mb-4 bg-red-50 border border-red-200 rounded-2xl p-3.5 text-xs font-bold text-red-600 shadow-2xs font-body">
-          {errorMessage}
+        <div className="mb-4 bg-red-50 border border-red-200 rounded-2xl p-3.5 flex items-start gap-2 text-xs font-bold text-red-600 shadow-2xs font-body">
+          <AlertCircle size={16} className="shrink-0 text-red-500 mt-0.5" />
+          <span>{errorMessage}</span>
         </div>
       )}
 
-      {/* Profile Avatar Hero Card */}
+      {/* Profile Avatar Hero Card with Interactive Camera Upload Badge */}
       <div className="bg-white rounded-3xl p-6 text-center shadow-xs border border-pink-100/60 mb-5 relative overflow-hidden">
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-pink-400 text-white text-3xl font-bold flex items-center justify-center mx-auto mb-3 shadow-md overflow-hidden border-4 border-white relative">
-          {avatarUrl ? (
-            <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
-          ) : (
-            <span>{displayName.charAt(0).toUpperCase() || 'U'}</span>
-          )}
+        <div className="relative w-24 h-24 mx-auto mb-3">
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[var(--color-primary)] to-pink-400 text-white text-3xl font-bold flex items-center justify-center shadow-md overflow-hidden border-4 border-white">
+            {isUploadingAvatar ? (
+              <div className="flex flex-col items-center justify-center bg-black/40 w-full h-full text-white">
+                <Loader2 size={24} className="animate-spin text-white" />
+              </div>
+            ) : avatarUrl ? (
+              <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+            ) : (
+              <span>{displayName.charAt(0).toUpperCase() || 'U'}</span>
+            )}
+          </div>
+
+          {/* Interactive Camera Button Badge */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            whileHover={{ scale: 1.08 }}
+            onClick={() => avatarFileInputRef.current?.click()}
+            disabled={isUploadingAvatar}
+            className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-[var(--color-primary)] text-white flex items-center justify-center shadow-md border-2 border-white cursor-pointer active:scale-95 transition-all"
+            title="เปลี่ยนรูปโปรไฟล์ (1 รูปต่อบัญชี)"
+          >
+            {isUploadingAvatar ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Camera size={14} />
+            )}
+          </motion.button>
         </div>
+
+        <button
+          onClick={() => avatarFileInputRef.current?.click()}
+          disabled={isUploadingAvatar}
+          className="text-xs font-bold text-[var(--color-primary)] hover:underline mb-1 inline-flex items-center gap-1 font-body cursor-pointer"
+        >
+          <Camera size={13} /> แตะเพื่อเปลี่ยนรูปโปรไฟล์
+        </button>
 
         <h2 className="font-bold text-lg text-gray-800 font-body">{displayName || 'ผู้ใช้งาน'}</h2>
         <p className="text-xs text-gray-400 mt-0.5 flex items-center justify-center gap-1 font-body">

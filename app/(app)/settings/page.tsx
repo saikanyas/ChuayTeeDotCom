@@ -13,9 +13,29 @@ export default function SettingsPage() {
   const [user, setUser] = useState<any>(null)
   const { dailyTarget, setDailyTarget } = useFinanceStore()
   const [targetInput, setTargetInput] = useState(dailyTarget.toString())
+  const [profileAvatar, setProfileAvatar] = useState<string | null>(null)
+  const [profileName, setProfileName] = useState<string | null>(null)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+    async function loadUserData() {
+      const { data } = await supabase.auth.getUser()
+      if (data.user) {
+        setUser(data.user)
+        try {
+          const { data: prof } = await (supabase.from('profiles') as any)
+            .select('display_name, avatar_url')
+            .eq('id', data.user.id)
+            .maybeSingle()
+          if (prof) {
+            if (prof.avatar_url) setProfileAvatar(prof.avatar_url)
+            if (prof.display_name) setProfileName(prof.display_name)
+          }
+        } catch {
+          // ignore error
+        }
+      }
+    }
+    loadUserData()
   }, [])
 
   const signOut = async () => {
@@ -40,12 +60,14 @@ export default function SettingsPage() {
 
   const isTargetZero = dailyTarget === 0 || !targetInput || targetInput === '0'
 
-  const avatarUrl = user?.user_metadata?.avatar_url || 
+  const avatarUrl = profileAvatar ||
+                    user?.user_metadata?.avatar_url || 
                     user?.user_metadata?.picture || 
                     user?.identities?.[0]?.identity_data?.avatar_url || 
                     user?.identities?.[0]?.identity_data?.picture
 
-  const displayName = user?.user_metadata?.full_name || 
+  const displayName = profileName ||
+                      user?.user_metadata?.full_name || 
                       user?.user_metadata?.name || 
                       user?.user_metadata?.display_name || 
                       user?.email?.split('@')[0] || 

@@ -139,3 +139,62 @@ export async function compressImage(
     img.src = url
   })
 }
+
+export async function compressAvatarImage(
+  file: File,
+  targetSize = 256,
+  quality = 0.85
+): Promise<Blob> {
+  if (!file.type.startsWith('image/')) {
+    throw new Error('ชนิดไฟล์ไม่ถูกต้อง กรุณาเลือกไฟล์รูปภาพเท่านั้นครับ')
+  }
+
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const minDim = Math.min(img.width, img.height)
+      const sourceX = (img.width - minDim) / 2
+      const sourceY = (img.height - minDim) / 2
+
+      const canvas = document.createElement('canvas')
+      canvas.width = targetSize
+      canvas.height = targetSize
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        reject(new Error('ไม่สามารถประมวลผลรูปภาพได้'))
+        return
+      }
+
+      ctx.fillStyle = '#FFFFFF'
+      ctx.fillRect(0, 0, targetSize, targetSize)
+      ctx.imageSmoothingQuality = 'high'
+      ctx.drawImage(
+        img,
+        sourceX, sourceY, minDim, minDim,
+        0, 0, targetSize, targetSize
+      )
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob)
+          } else {
+            reject(new Error('บีบอัดรูปโปรไฟล์ล้มเหลว'))
+          }
+        },
+        'image/jpeg',
+        quality
+      )
+    }
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('อ่านไฟล์รูปภาพไม่สำเร็จ'))
+    }
+
+    img.src = url
+  })
+}
