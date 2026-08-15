@@ -55,19 +55,28 @@ export default function SettingsPage() {
     <div className="min-h-screen p-4 bg-[#F9F8FA] pb-28 font-body">
       <h1 className="text-xl font-display font-bold mb-6 mt-2 text-gray-800">ตั้งค่าและเมนู</h1>
       
-      {/* User profile card */}
-      <div className="bg-white rounded-2xl p-4 flex items-center mb-6 border border-gray-100 shadow-2xs font-body">
-        <div className="w-14 h-14 rounded-full bg-[var(--color-primary)] text-white text-xl font-bold flex items-center justify-center mr-4 shadow-xs shrink-0 overflow-hidden border border-pink-100">
-          {avatarUrl ? (
-            <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
-          ) : (
-            displayName.charAt(0).toUpperCase()
-          )}
+      {/* User profile card (Clickable to edit profile) */}
+      <div 
+        onClick={() => router.push('/profile')}
+        className="bg-white rounded-2xl p-4 flex items-center justify-between mb-6 border border-pink-100 shadow-2xs font-body cursor-pointer hover:border-pink-300 active:scale-98 transition-all"
+      >
+        <div className="flex items-center">
+          <div className="w-14 h-14 rounded-full bg-[var(--color-primary)] text-white text-xl font-bold flex items-center justify-center mr-4 shadow-xs shrink-0 overflow-hidden border border-pink-100">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+            ) : (
+              displayName.charAt(0).toUpperCase()
+            )}
+          </div>
+          <div>
+            <h2 className="font-bold text-base text-gray-800 font-body">{displayName}</h2>
+            <p className="text-xs text-gray-500 font-body">{user?.email || 'บัญชีเริ่มต้น'}</p>
+            <span className="text-[10px] font-bold text-[var(--color-primary)] mt-0.5 block">
+              แตะเพื่อตั้งค่าโปรไฟล์ ➔
+            </span>
+          </div>
         </div>
-        <div>
-          <h2 className="font-bold text-base text-gray-800 font-body">{displayName}</h2>
-          <p className="text-xs text-gray-500 font-body">{user?.email || 'บัญชีเริ่มต้น'}</p>
-        </div>
+        <ChevronRight size={18} className="text-gray-400 shrink-0" />
       </div>
 
       {/* Configurable Settings Card */}
