@@ -103,7 +103,7 @@ class KBankParser(BankParser):
             }
             try:
                 year_num = int(year)
-                year_ad = year_num - 543 if year_num > 2500 else (2000 + year_num if year_num < 100 else year_num)
+                year_ad = year_num - 543 if year_num > 2400 else (2500 + year_num - 543 if year_num < 100 else year_num)
             except ValueError:
                 year_ad = 2026
             month_num = month_map.get(month_th, "08")

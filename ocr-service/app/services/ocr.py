@@ -26,7 +26,7 @@ from app.parsers.truemoney import TrueMoneyParser
 logger = logging.getLogger(__name__)
 
 _BANK_SIGNATURES: dict[str, list[str]] = {
-    "kbank": ["KBANK", "กสิกรไทย", "K PLUS", "Kasikorn", "K-BANK"],
+    "kbank": ["KBANK", "กสิกรไทย", "K PLUS", "K+", "Kasikorn", "K-BANK"],
     "scb": ["SCB", "ไทยพาณิชย์", "SCB Easy", "easy net"],
     "krungthai": ["KTB", "กรุงไทย", "Krungthai", "NEXT", "PromptPay KTB"],
     "bangkok_bank": ["BBL", "กรุงเทพ", "Bangkok Bank", "Bualuang", "bualuang"],

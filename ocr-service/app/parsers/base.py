@@ -39,7 +39,7 @@ class BankParser(ABC):
 
     _DATE_PATTERNS = [
         # DD/MM/YYYY or DD-MM-YYYY (Buddhist or Gregorian)
-        r"(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})",
+        r"(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})",
         # YYYY-MM-DD
         r"(\d{4})-(\d{2})-(\d{2})",
         # DD MMM YYYY (Thai month names handled in subclasses)
@@ -50,6 +50,21 @@ class BankParser(ABC):
         r"(\d{2}:\d{2}:\d{2})",
         r"(\d{2}:\d{2})",
     ]
+
+    _THAI_MONTHS = {
+        "มกราคม": "01", "ม.ค.": "01", "ม.ค": "01",
+        "กุมภาพันธ์": "02", "ก.พ.": "02", "ก.พ": "02",
+        "มีนาคม": "03", "มี.ค.": "03", "มี.ค": "03",
+        "เมษายน": "04", "เม.ย.": "04", "เม.ย": "04",
+        "พฤษภาคม": "05", "พ.ค.": "05", "พ.ค": "05",
+        "มิถุนายน": "06", "มิ.ย.": "06", "มิ.ย": "06",
+        "กรกฎาคม": "07", "ก.ค.": "07", "ก.ค": "07",
+        "สิงหาคม": "08", "ส.ค.": "08", "ส.ค": "08",
+        "กันยายน": "09", "ก.ย.": "09", "ก.ย": "09",
+        "ตุลาคม": "10", "ต.ค.": "10", "ต.ค": "10",
+        "พฤศจิกายน": "11", "พ.ย.": "11", "พ.ย": "11",
+        "ธันวาคม": "12", "ธ.ค.": "12", "ธ.ค": "12",
+    }
 
     _REF_PATTERNS = [
         r"(?:ref(?:erence)?(?:\s*no\.?)?|หมายเลข(?:อ้างอิง)?|เลขที่(?:อ้างอิง)?)[:\s]*([A-Z0-9\-]{6,})",
@@ -71,10 +86,31 @@ class BankParser(ABC):
 
     def _extract_date(self, text: str) -> Optional[str]:
         """Return the first date-like string found."""
-        # Try HH:MM:SS first to avoid confusing time with date
+        month_pattern = "|".join(
+            re.escape(month) for month in sorted(self._THAI_MONTHS, key=len, reverse=True)
+        )
+        thai_match = re.search(
+            rf"(\d{{1,2}})\s*({month_pattern})\s*(\d{{2,4}})",
+            text,
+        )
+        if thai_match:
+            day, month, raw_year = thai_match.groups()
+            year = int(raw_year)
+            year = year - 543 if year > 2400 else (year + 2500 - 543 if year < 100 else year)
+            return f"{year:04d}-{self._THAI_MONTHS[month]}-{int(day):02d}"
+
         for pattern in self._DATE_PATTERNS:
             m = re.search(pattern, text)
             if m:
+                groups = m.groups()
+                if len(groups) == 3:
+                    first, second, third = groups
+                    if len(first) == 4:
+                        year, month, day = int(first), int(second), int(third)
+                    else:
+                        day, month, year = int(first), int(second), int(third)
+                    year = year - 543 if year > 2400 else (year + 2500 - 543 if year < 100 else year)
+                    return f"{year:04d}-{month:02d}-{day:02d}"
                 return m.group(0).strip()
         return None
 

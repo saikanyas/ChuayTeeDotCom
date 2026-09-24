@@ -20,12 +20,30 @@ export async function processRealSlipOCR(file: File): Promise<RealOCRResult> {
 
   const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
 
-  const dateMatch = rawText.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})\b/)
+  const thaiMonths: Record<string, string> = {
+    'มกราคม': '01', 'ม.ค.': '01', 'ม.ค': '01',
+    'กุมภาพันธ์': '02', 'ก.พ.': '02', 'ก.พ': '02',
+    'มีนาคม': '03', 'มี.ค.': '03', 'มี.ค': '03',
+    'เมษายน': '04', 'เม.ย.': '04', 'เม.ย': '04',
+    'พฤษภาคม': '05', 'พ.ค.': '05', 'พ.ค': '05',
+    'มิถุนายน': '06', 'มิ.ย.': '06', 'มิ.ย': '06',
+    'กรกฎาคม': '07', 'ก.ค.': '07', 'ก.ค': '07',
+    'สิงหาคม': '08', 'ส.ค.': '08', 'ส.ค': '08',
+    'กันยายน': '09', 'ก.ย.': '09', 'ก.ย': '09',
+    'ตุลาคม': '10', 'ต.ค.': '10', 'ต.ค': '10',
+    'พฤศจิกายน': '11', 'พ.ย.': '11', 'พ.ย': '11',
+    'ธันวาคม': '12', 'ธ.ค.': '12', 'ธ.ค': '12',
+  }
+  const monthPattern = Object.keys(thaiMonths).sort((a, b) => b.length - a.length).join('|')
+  const dateMatch = rawText.match(new RegExp(`(?:\\b(\\d{1,2})[/.\\-](\\d{1,2})[/.\\-](\\d{2,4})\\b)|(\\d{1,2})\\s*(${monthPattern})\\s*(\\d{2,4})`))
   let transactionDate: string | null = null
   if (dateMatch) {
-    const [, day, month, rawYear] = dateMatch
+    const [, numericDay, numericMonth, numericYear, thaiDay, thaiMonth, thaiYear] = dateMatch
+    const day = numericDay ?? thaiDay
+    const month = numericMonth ?? thaiMonths[thaiMonth]
+    const rawYear = numericYear ?? thaiYear
     const year = Number(rawYear)
-    const yearAd = year > 2400 ? year - 543 : year < 100 ? year + 2000 : year
+    const yearAd = year > 2400 ? year - 543 : year < 100 ? year + 2500 - 543 : year
     transactionDate = `${yearAd.toString().padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
   }
   const timeMatch = rawText.match(/\b(\d{1,2}:\d{2}(?::\d{2})?)\b/)
