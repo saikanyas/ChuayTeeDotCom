@@ -107,7 +107,7 @@ export default function MonthlySummaryCard({
   }
 
   return (
-    <div className="bg-white rounded-3xl p-5 shadow-xs border border-gray-100/80 mb-3 font-body relative">
+    <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100/80 mb-3 font-body relative">
       {/* Date filter row */}
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
         <div className="flex items-center gap-1.5 cursor-pointer">
@@ -149,17 +149,17 @@ export default function MonthlySummaryCard({
 
       {/* Daily Target Prompt Banner (When dailyTarget === 0) */}
       {dailyTarget === 0 && (
-        <div className="bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-2xl p-4 mb-4 shadow-md space-y-2 animate-fadeIn font-body">
+        <div className="bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-2xl px-3.5 py-2.5 mb-3 shadow-sm space-y-1.5 animate-fadeIn font-body">
           <div className="flex items-center gap-2 font-bold text-xs font-body">
-            <Sparkles size={16} className="text-amber-300 shrink-0" />
-            <span>คุณยังไม่มีเป้าหมายรายวัน 🎯</span>
+            <Sparkles size={14} className="text-amber-200 shrink-0" />
+            <span className="text-xs">คุณยังไม่มีเป้าหมายรายวัน 🎯</span>
           </div>
-          <p className="text-[11px] opacity-90 leading-relaxed font-body">
+          <p className="text-[10px] opacity-90 leading-snug font-body">
             หากต้องการแสดงผลปฏิทิน Heatmap ความถี่รายวัน สามารถกดปุ่มด้านล่างเพื่อย้ายไปตั้งเป้าหมายรายวันในหน้าเมนูได้เลยครับ
           </p>
           <button
             onClick={() => router.push('/settings')}
-            className="w-full py-2.5 px-3 rounded-xl bg-white text-[var(--color-primary)] font-bold text-xs shadow-xs hover:bg-pink-50 active:scale-95 transition-all flex items-center justify-center gap-1.5 font-body"
+            className="w-full py-2 px-3 rounded-xl bg-white text-[var(--color-primary-dark)] font-bold text-[11px] shadow-xs hover:bg-pink-50 active:scale-95 transition-all flex items-center justify-center gap-1.5 font-body"
           >
             ⚙️ ย้ายไปตั้งเป้าหมายรายวันในหน้าเมนู (คลิกตรงนี้)
           </button>
@@ -209,7 +209,7 @@ export default function MonthlySummaryCard({
                 <span>{cell.dateNumber}</span>
                 {cell.spending > 0 && cell.isCurrentMonth && (
                   <span className="text-[8px] font-mono leading-none opacity-90 mt-0.5">
-                    ฿{cell.spending}
+                    {cell.spending}
                   </span>
                 )}
               </motion.div>

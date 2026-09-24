@@ -103,7 +103,7 @@ export default function BubbleCluster({
 
         {/* Central main mascot circle */}
         <motion.div 
-          className="w-[140px] h-[140px] rounded-full bg-white shadow-md border-2 border-white flex flex-col items-center justify-center text-center p-3 z-10"
+          className="w-[140px] h-[140px] rounded-full bg-white shadow-sm border-2 border-white flex flex-col items-center justify-center text-center p-3 z-10"
           animate={{ scale: [1, 1.03, 1] }}
           transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           whileTap={{ scale: 0.9 }}

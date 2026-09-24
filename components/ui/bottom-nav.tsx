@@ -27,14 +27,14 @@ export default function BottomNav() {
           <motion.div key={tab.name} whileTap={{ scale: 0.82 }}>
             <Link 
               href={tab.href} 
-              className={cn("flex flex-col items-center justify-center w-14 transition-colors", isActive ? "text-[var(--color-primary)] font-bold" : "text-gray-400")}
+              className={cn("flex flex-col items-center justify-center w-14 transition-colors", isActive ? "text-[var(--color-primary-dark)] font-bold" : "text-gray-400")}
             >
               <tab.icon size={22} strokeWidth={isActive ? 2.5 : 1.8} />
               <span className="text-[10px] mt-1 font-body">{tab.name}</span>
               {isActive && (
                 <motion.span 
                   layoutId="activeBottomDot" 
-                  className="w-4 h-[2px] bg-[var(--color-primary)] rounded-full mt-[2px]" 
+                  className="w-4 h-[2px] bg-[var(--color-primary-dark)] rounded-full mt-[2px]" 
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 />
               )}
@@ -63,14 +63,14 @@ export default function BottomNav() {
           <motion.div key={tab.name} whileTap={{ scale: 0.82 }}>
             <Link 
               href={tab.href} 
-              className={cn("flex flex-col items-center justify-center w-14 transition-colors", isActive ? "text-[var(--color-primary)] font-bold" : "text-gray-400")}
+              className={cn("flex flex-col items-center justify-center w-14 transition-colors", isActive ? "text-[var(--color-primary-dark)] font-bold" : "text-gray-400")}
             >
               <tab.icon size={22} strokeWidth={isActive ? 2.5 : 1.8} />
               <span className="text-[10px] mt-1 font-body">{tab.name}</span>
               {isActive && (
                 <motion.span 
                   layoutId="activeBottomDot" 
-                  className="w-4 h-[2px] bg-[var(--color-primary)] rounded-full mt-[2px]" 
+                  className="w-4 h-[2px] bg-[var(--color-primary-dark)] rounded-full mt-[2px]" 
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 />
               )}

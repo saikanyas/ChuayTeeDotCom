@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "ช่วยที.com — เพื่อนช่วยรอดสิ้นเดือน",
+  title: "ช่วยที",
   description: "บันทึกรายรับ-รายจ่าย สแกนสลิปโอนเงิน วิเคราะห์การใช้จ่าย สำหรับนักศึกษาไทย",
   manifest: "/manifest.json",
   icons: {
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
   openGraph: {
     type: "website",
-    title: "ช่วยที.com",
+    title: "ช่วยที",
     description: "เพื่อนช่วยรอดสิ้นเดือน สำหรับนักศึกษา",
     siteName: "ช่วยที.com",
   },
