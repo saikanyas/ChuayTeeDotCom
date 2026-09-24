@@ -9,7 +9,24 @@ export interface ProfileData {
   display_name: string | null
   avatar_url: string | null
   default_currency: string
+  daily_target: number
   created_at?: string
+}
+
+export async function updateDailyTarget(userId: string, dailyTarget: number): Promise<void> {
+  if (!Number.isFinite(dailyTarget) || dailyTarget < 0) {
+    throw new Error('เป้าหมายรายวันต้องเป็นจำนวนเงินที่ไม่ติดลบ')
+  }
+
+  const { error } = await (supabase().from('profiles') as any).upsert({
+    id: userId,
+    daily_target: dailyTarget,
+  })
+
+  if (error) {
+    console.error('updateDailyTarget error:', error)
+    throw error
+  }
 }
 
 /**

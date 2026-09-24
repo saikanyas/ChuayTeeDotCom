@@ -11,7 +11,7 @@ interface MonthlySummaryCardProps {
   netBalance?: number
   dailyTarget?: number
   dailySpendingMap?: Record<string, number>
-  onUpdateDailyTarget?: (newTarget: number) => void
+  onUpdateDailyTarget?: (newTarget: number) => void | Promise<void>
 }
 
 export default function MonthlySummaryCard({

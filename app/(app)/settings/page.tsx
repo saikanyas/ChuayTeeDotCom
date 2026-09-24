@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useFinanceStore } from '@/store/finance'
+import * as ProfilesDB from '@/lib/supabase/profiles'
 import { LogOut, Bell, ChevronRight, Target } from 'lucide-react'
 import PWAInstallBanner from '@/components/pwa-install-banner'
 
@@ -21,17 +22,27 @@ export default function SettingsPage() {
       const { data } = await supabase.auth.getUser()
       if (data.user) {
         setUser(data.user)
+        const cachedTarget = localStorage.getItem(`daily_target_${data.user.id}`)
+        if (cachedTarget && Number.isFinite(Number(cachedTarget))) {
+          setDailyTarget(Number(cachedTarget))
+          setTargetInput(cachedTarget)
+        }
         try {
           const { data: prof } = await (supabase.from('profiles') as any)
-            .select('display_name, avatar_url')
+            .select('display_name, avatar_url, daily_target')
             .eq('id', data.user.id)
             .maybeSingle()
           if (prof) {
             if (prof.avatar_url) setProfileAvatar(prof.avatar_url)
             if (prof.display_name) setProfileName(prof.display_name)
+            const savedTarget = Number(prof.daily_target)
+            if (Number.isFinite(savedTarget) && savedTarget >= 0) {
+              setDailyTarget(savedTarget)
+              setTargetInput(savedTarget.toString())
+            }
           }
         } catch {
-          // ignore error
+          console.warn('Unable to load daily target from Supabase; using cached value')
         }
       }
     }
@@ -47,13 +58,22 @@ export default function SettingsPage() {
     window.location.href = '/login'
   }
 
-  const handleTargetChange = (val: string) => {
+  const handleTargetChange = async (val: string) => {
     setTargetInput(val)
     const num = parseFloat(val)
     if (!isNaN(num) && num >= 0) {
+      const previousTarget = dailyTarget
       setDailyTarget(num)
       if (user?.id) {
-        localStorage.setItem(`daily_target_${user.id}`, num.toString())
+        try {
+          await ProfilesDB.updateDailyTarget(user.id, num)
+          localStorage.setItem(`daily_target_${user.id}`, num.toString())
+        } catch (error) {
+          console.error('Failed to save daily target:', error)
+          setTargetInput(previousTarget.toString())
+          setDailyTarget(previousTarget)
+          alert('บันทึกเป้าหมายรายวันไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+        }
       }
     }
   }

@@ -10,6 +10,7 @@ export interface Database {
           display_name: string | null
           avatar_url: string | null
           default_currency: string
+          daily_target: number
           created_at: string
         }
         Insert: {
@@ -17,6 +18,7 @@ export interface Database {
           display_name?: string | null
           avatar_url?: string | null
           default_currency?: string
+          daily_target?: number
           created_at?: string
         }
         Update: {
@@ -24,6 +26,7 @@ export interface Database {
           display_name?: string | null
           avatar_url?: string | null
           default_currency?: string
+          daily_target?: number
           created_at?: string
         }
       }

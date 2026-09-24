@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import * as TransactionsDB from '@/lib/supabase/transactions'
 import * as GoalsDB from '@/lib/supabase/goals'
 import * as AccountsDB from '@/lib/supabase/accounts'
+import * as ProfilesDB from '@/lib/supabase/profiles'
 import { ChevronDown, Menu, Plus, Target, Sparkles, X, AlertCircle, Trash2 } from 'lucide-react'
 import DynamicBarChart from '@/components/finance/charts/dynamic-bar-chart'
 import DynamicPieChart from '@/components/finance/charts/dynamic-pie-chart'
@@ -56,12 +57,19 @@ export default function DashboardPage() {
         setDailyTarget(savedTarget ? Number(savedTarget) : 0)
         try {
           const { data: prof } = await (supabase.from('profiles') as any)
-            .select('display_name, avatar_url')
+            .select('display_name, avatar_url, daily_target')
             .eq('id', u.id)
             .maybeSingle()
           if (prof) {
             if (prof.avatar_url) setProfileAvatar(prof.avatar_url)
             if (prof.display_name) setProfileName(prof.display_name)
+            const savedTarget = Number(prof.daily_target)
+            if (Number.isFinite(savedTarget) && savedTarget >= 0) {
+              setDailyTarget(savedTarget)
+            } else {
+              const cachedTarget = localStorage.getItem(`daily_target_${u.id}`)
+              setDailyTarget(cachedTarget ? Number(cachedTarget) : 0)
+            }
           }
         } catch {
           // ignore error
@@ -273,10 +281,18 @@ export default function DashboardPage() {
                   netBalance={netBalance}
                   dailyTarget={dailyTarget}
                   dailySpendingMap={dailySpendingMap}
-                  onUpdateDailyTarget={(newVal) => {
+                  onUpdateDailyTarget={async (newVal) => {
+                    const previousTarget = dailyTarget
                     setDailyTarget(newVal)
                     if (user?.id) {
-                      localStorage.setItem(`daily_target_${user.id}`, newVal.toString())
+                      try {
+                        await ProfilesDB.updateDailyTarget(user.id, newVal)
+                        localStorage.setItem(`daily_target_${user.id}`, newVal.toString())
+                      } catch (error) {
+                        console.error('Failed to save daily target:', error)
+                        setDailyTarget(previousTarget)
+                        alert('บันทึกเป้าหมายรายวันไม่สำเร็จ กรุณาลองใหม่อีกครั้ง')
+                      }
                     }
                   }}
                 />
