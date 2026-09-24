@@ -31,4 +31,4 @@ ENV PYTHONUNBUFFERED=1 \
     VECLIB_MAXIMUM_THREADS=1 \
     NUMEXPR_NUM_THREADS=1
 
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000} --workers 1 --limit-concurrency 5"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000} --workers 1 --limit-concurrency 2"]

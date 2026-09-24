@@ -8,6 +8,8 @@ export interface RealOCRResult {
   reference_number: string
   raw_text: string
   confidence: number
+  transaction_date: string | null
+  transaction_time: string | null
 }
 
 export async function processRealSlipOCR(file: File): Promise<RealOCRResult> {
@@ -17,6 +19,16 @@ export async function processRealSlipOCR(file: File): Promise<RealOCRResult> {
   await worker.terminate()
 
   const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+
+  const dateMatch = rawText.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})\b/)
+  let transactionDate: string | null = null
+  if (dateMatch) {
+    const [, day, month, rawYear] = dateMatch
+    const year = Number(rawYear)
+    const yearAd = year > 2400 ? year - 543 : year < 100 ? year + 2000 : year
+    transactionDate = `${yearAd.toString().padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+  }
+  const timeMatch = rawText.match(/\b(\d{1,2}:\d{2}(?::\d{2})?)\b/)
 
   // 1. Detect Bank
   let bank = 'PromptPay (พร้อมเพย์)'
@@ -84,6 +96,8 @@ export async function processRealSlipOCR(file: File): Promise<RealOCRResult> {
     receiver_name: receiver,
     reference_number: refNo,
     raw_text: rawText,
-    confidence: Math.round((ret.data.confidence || 90)) / 100
+    confidence: Math.round((ret.data.confidence || 90)) / 100,
+    transaction_date: transactionDate,
+    transaction_time: timeMatch?.[1] ?? null,
   }
 }

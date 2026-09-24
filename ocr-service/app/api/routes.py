@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from starlette.concurrency import run_in_threadpool
 
 from app.models.schemas import HealthResponse, OCRResponse, SlipData
 from app.services import ocr as ocr_service
@@ -24,6 +26,7 @@ _ALLOWED_CONTENT_TYPES = {
     "image/bmp",
     "image/tiff",
 }
+_OCR_LOCK = asyncio.Lock()
 
 
 @router.get("/health", response_model=HealthResponse, tags=["system"])
@@ -80,8 +83,15 @@ async def process_slip(
         )
 
     # --- Process ----------------------------------------------------------
+    if _OCR_LOCK.locked():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="OCR service is busy. Please retry shortly.",
+        )
+
     try:
-        slip_data: SlipData = ocr_service.process_image(image_bytes)
+        async with _OCR_LOCK:
+            slip_data: SlipData = await run_in_threadpool(ocr_service.process_image, image_bytes)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     except RuntimeError as exc:

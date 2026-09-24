@@ -13,7 +13,7 @@ import {
 import { useFinanceStore } from '@/store/finance'
 import { createClient } from '@/lib/supabase/client'
 import { processRealSlipOCR } from '@/lib/real-ocr'
-import { scanSlip } from '@/lib/ocr-client'
+import { OCRServiceUnavailableError, scanSlip } from '@/lib/ocr-client'
 import { compressImage } from '@/lib/utils'
 import * as TransactionsDB from '@/lib/supabase/transactions'
 import * as AccountsDB from '@/lib/supabase/accounts'
@@ -58,6 +58,8 @@ export default function AddPage() {
   const [dateStr, setDateStr] = useState('')
   const [customDate, setCustomDate] = useState('')
   const [customTime, setCustomTime] = useState('')
+  const [baseDate, setBaseDate] = useState('')
+  const [baseTime, setBaseTime] = useState('')
 
   // Expense Categories (ไปหมวดหมู่)
   const expenseCategories = [
@@ -95,6 +97,14 @@ export default function AddPage() {
   const [selectedCategory, setSelectedCategory] = useState(expenseCategories[0])
   const [transactionTitle, setTransactionTitle] = useState(expenseCategories[0].name)
 
+  const formatDateTimeLabel = (date: string | null, time: string | null) => {
+    if (!date) return 'ไม่พบวันที่ในสลิป'
+    const [year, month, day] = date.split('-').map(Number)
+    const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
+    const thaiYear = (year + 543).toString().slice(-2)
+    return `${day} ${monthNames[month - 1]} ${thaiYear}${time ? ` ${time.slice(0, 5)}` : ''}`
+  }
+
   const isCustomImage = (iconStr?: string) => {
     if (!iconStr) return false
     return iconStr.startsWith('data:') || iconStr.startsWith('http') || iconStr.startsWith('blob:')
@@ -124,6 +134,8 @@ export default function AddPage() {
     setDateStr(`${thaiDateStr} ${thaiTimeStr}`)
 
     const isoDate = now.toLocaleDateString('sv-SE', { timeZone: 'Asia/Bangkok' })
+    setBaseDate(isoDate)
+    setBaseTime(thaiTimeStr)
     setCustomDate(isoDate)
     setCustomTime(thaiTimeStr)
 
@@ -155,25 +167,37 @@ export default function AddPage() {
       const previewUrl = URL.createObjectURL(compressedBlob)
 
       let extractedAmt = 39
-      let extractedDateStr = '12 ส.ค. 69 20:44'
       let ocrResData: any = null
 
       try {
         const pythonRes = await scanSlip(compressedFile)
         ocrResData = pythonRes
         if (pythonRes.amount) extractedAmt = pythonRes.amount
-      } catch {
+      } catch (err) {
+        if (!(err instanceof OCRServiceUnavailableError)) {
+          throw err
+        }
         const localRes = await processRealSlipOCR(compressedFile)
         ocrResData = localRes
         if (localRes.amount) extractedAmt = localRes.amount
       }
 
+      const slipDate = ocrResData?.transaction_date ?? null
+      const slipTime = ocrResData?.transaction_time ?? null
+      const hasSlipDate = Boolean(slipDate)
+      if (slipDate) setCustomDate(slipDate)
+      if (slipTime) setCustomTime(slipTime.slice(0, 5))
+      if (slipDate || slipTime) {
+        const dateForLabel = slipDate ?? customDate
+        const timeForLabel = slipTime ?? customTime
+        setDateStr(formatDateTimeLabel(dateForLabel, timeForLabel))
+      }
       setOcrDataResult(ocrResData)
       setScanResult({
         imagePreviewUrl: previewUrl,
         amount: extractedAmt,
-        dateText: extractedDateStr,
-        usedSlipDate: true,
+        dateText: formatDateTimeLabel(slipDate, slipTime),
+        usedSlipDate: hasSlipDate,
       })
       setAmount(extractedAmt.toString())
     } catch (err: any) {
@@ -229,8 +253,13 @@ export default function AddPage() {
     const numAmount = parseFloat(amount) || 0
     if (numAmount <= 0) return
     
-    const thaiDateStr = customDate || new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Bangkok' })
-    const thaiTimeStr = customTime || '12:00'
+    const useSlipDate = Boolean(scanResult?.usedSlipDate && ocrDataResult?.transaction_date)
+    const thaiDateStr = useSlipDate
+      ? ocrDataResult.transaction_date
+      : (customDate || new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Bangkok' }))
+    const thaiTimeStr = useSlipDate
+      ? (ocrDataResult.transaction_time?.slice(0, 5) || customTime || '12:00')
+      : (customTime || '12:00')
 
     // Optimistic UI update
     const tempId = 'tx_' + Date.now()
@@ -481,7 +510,12 @@ export default function AddPage() {
               </p>
               <div className="flex gap-2">
                 <button
-                  onClick={() => setScanResult({ ...scanResult, usedSlipDate: false })}
+                  onClick={() => {
+                    setScanResult({ ...scanResult, usedSlipDate: false })
+                    setCustomDate(baseDate)
+                    setCustomTime(baseTime)
+                    setDateStr(formatDateTimeLabel(baseDate, baseTime))
+                  }}
                   className={`flex-1 py-1.5 rounded-full text-xs font-bold flex items-center justify-center gap-1 border font-body ${
                     !scanResult.usedSlipDate
                       ? 'bg-white border-pink-300 text-pink-600 shadow-2xs'
@@ -492,7 +526,14 @@ export default function AddPage() {
                 </button>
 
                 <button
-                  onClick={() => setScanResult({ ...scanResult, usedSlipDate: true })}
+                  onClick={() => {
+                    const slipDate = ocrDataResult?.transaction_date ?? null
+                    const slipTime = ocrDataResult?.transaction_time ?? null
+                    setScanResult({ ...scanResult, usedSlipDate: Boolean(slipDate) })
+                    if (slipDate) setCustomDate(slipDate)
+                    if (slipTime) setCustomTime(slipTime.slice(0, 5))
+                    if (slipDate) setDateStr(formatDateTimeLabel(slipDate, slipTime))
+                  }}
                   className={`flex-1 py-1.5 rounded-full text-xs font-bold flex items-center justify-center gap-1 border font-body ${
                     scanResult.usedSlipDate
                       ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-2xs'
